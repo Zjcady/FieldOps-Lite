@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
+import { FileSpreadsheet, TrendingUp, Link2, Package } from "lucide-react";
 
 interface RevenueData {
   revenueByCategory: { name: string; value: number }[];
@@ -81,11 +82,13 @@ export default function ReportsPage() {
           value={formatCurrency(data.totalRevenue)}
           label="Total Revenue"
           valueColor="text-green-400"
+          borderColor="border-l-green-400"
         />
         <MetricCard
           value={formatCurrency(data.totalOutstanding)}
           label="Outstanding"
           valueColor="text-amber-400"
+          borderColor="border-l-amber-400"
         />
       </div>
 
@@ -94,27 +97,27 @@ export default function ReportsPage() {
       </h2>
       <div className="mb-6 grid grid-cols-2 gap-3">
         {[
-          { icon: "📊", title: "QuickBooks Export", sub: "CSV ready" },
-          { icon: "📈", title: "Power BI Export", sub: "Analytics tables" },
-          { icon: "🔗", title: "Customer Portal", sub: "Share project link", href: "/portal/mrt-x7f2k9" },
-          { icon: "📦", title: "Material Orders", sub: "Compare vendors" },
-        ].map((action) => (
-          action.href ? (
-            <Link key={action.title} href={action.href}>
-              <Card className="cursor-pointer p-5 text-center transition-colors hover:border-primary/30">
-                <div className="mb-1.5 text-2xl">{action.icon}</div>
-                <div className="text-sm font-semibold">{action.title}</div>
-                <div className="mt-0.5 text-[11px] text-muted-foreground">{action.sub}</div>
-              </Card>
-            </Link>
-          ) : (
-            <Card key={action.title} className="cursor-pointer p-5 text-center transition-colors hover:border-primary/30">
-              <div className="mb-1.5 text-2xl">{action.icon}</div>
+          { icon: FileSpreadsheet, title: "QuickBooks Export", sub: "CSV ready", color: "bg-green-500/15 text-green-400" },
+          { icon: TrendingUp, title: "Power BI Export", sub: "Analytics tables", color: "bg-blue-500/15 text-blue-400" },
+          { icon: Link2, title: "Customer Portal", sub: "Share project link", href: "/portal/mrt-x7f2k9", color: "bg-purple-500/15 text-purple-400" },
+          { icon: Package, title: "Material Orders", sub: "Compare vendors", color: "bg-amber-500/15 text-amber-400" },
+        ].map((action) => {
+          const IconComp = action.icon;
+          const content = (
+            <Card key={action.title} className="cursor-pointer p-5 text-center transition-all hover:border-primary/30 hover:translate-y-[-1px]">
+              <div className={`mx-auto mb-2.5 flex h-10 w-10 items-center justify-center rounded-xl ${action.color}`}>
+                <IconComp className="h-5 w-5" />
+              </div>
               <div className="text-sm font-semibold">{action.title}</div>
               <div className="mt-0.5 text-[11px] text-muted-foreground">{action.sub}</div>
             </Card>
-          )
-        ))}
+          );
+          return action.href ? (
+            <Link key={action.title} href={action.href}>{content}</Link>
+          ) : (
+            <div key={action.title}>{content}</div>
+          );
+        })}
       </div>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

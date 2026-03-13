@@ -43,9 +43,9 @@ const inspectionIcon = (status: string) => {
 
 const permitIcon = (status: string) => {
   switch (status) {
-    case "approved": return <CheckCircle2 className="h-9 w-9 rounded-lg bg-green-500/12 p-2 text-green-400" />;
-    case "in_review": return <FileText className="h-9 w-9 rounded-lg bg-purple-500/12 p-2 text-purple-400" />;
-    default: return <AlertTriangle className="h-9 w-9 rounded-lg bg-amber-500/12 p-2 text-amber-400" />;
+    case "approved": return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-green-500/15"><CheckCircle2 className="h-4 w-4 text-green-400" /></div>;
+    case "in_review": return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-500/15"><FileText className="h-4 w-4 text-purple-400" /></div>;
+    default: return <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/15"><AlertTriangle className="h-4 w-4 text-amber-400" /></div>;
   }
 };
 
@@ -108,40 +108,36 @@ export default function PermitsPage() {
         </TabsList>
 
         <TabsContent value="permits" className="mt-4">
-          <Card className="p-4">
-            {permits.map((permit, i) => (
-              <div
-                key={permit.id}
-                className={`flex items-center gap-3 py-3 ${i < permits.length - 1 ? "border-b border-border" : ""}`}
-              >
+          <div className="space-y-2">
+            {permits.map((permit) => (
+              <Card key={permit.id} className="flex-row items-center gap-3 p-4">
                 {permitIcon(permit.status)}
                 <div className="flex-1 min-w-0">
-                  <div className="truncate text-sm font-medium">
+                  <div className="truncate text-sm font-semibold">
                     {permit.job?.title || "Unknown Job"} — {permit.type}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="mt-0.5 text-xs text-muted-foreground">
                     {permit.jurisdiction} · {permit.expiryDate ? `Expires ${formatDate(permit.expiryDate)}` : permit.permitNumber || "Pending"}
                   </div>
                 </div>
                 <StatusBadge status={permit.status} />
-              </div>
+              </Card>
             ))}
-          </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="inspections" className="mt-4">
-          <Card className="p-4">
-            {inspections.map((insp, i) => (
-              <div
-                key={insp.id}
-                className={`flex items-center gap-3 py-3 ${i < inspections.length - 1 ? "border-b border-border" : ""}`}
-              >
-                {inspectionIcon(insp.status)}
+          <div className="space-y-2">
+            {inspections.map((insp) => (
+              <Card key={insp.id} className="flex-row items-center gap-3 p-4">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
+                  {inspectionIcon(insp.status)}
+                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="truncate text-sm font-medium">
+                  <div className="truncate text-sm font-semibold">
                     {insp.job?.title || "Unknown"} — {insp.type}
                   </div>
-                  <div className="text-xs text-muted-foreground">
+                  <div className="mt-0.5 text-xs text-muted-foreground">
                     {insp.status === "passed" || insp.status === "failed"
                       ? `${formatDate(insp.completedDate)}${insp.inspector ? ` · Inspector: ${insp.inspector}` : ""}`
                       : `Scheduled ${formatDate(insp.scheduledDate)}`}
@@ -149,9 +145,9 @@ export default function PermitsPage() {
                   </div>
                 </div>
                 <StatusBadge status={insp.status} />
-              </div>
+              </Card>
             ))}
-          </Card>
+          </div>
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">

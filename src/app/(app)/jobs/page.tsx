@@ -86,7 +86,7 @@ export default function JobsPage() {
         <div className="space-y-3">
           {jobs.map((job) => (
             <Link key={job.id} href={`/jobs/${job.id}`}>
-              <Card className="cursor-pointer p-4 transition-colors hover:border-primary/30">
+              <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]">
                 <div className="mb-1.5 flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold leading-tight">{job.title}</h3>
@@ -120,7 +120,7 @@ export default function JobsPage() {
                 </div>
                 {job.progress > 0 && (
                   <div className="mt-2.5">
-                    <div className="h-1 overflow-hidden rounded-full bg-border">
+                    <div className="h-1.5 overflow-hidden rounded-full bg-border">
                       <div
                         className="h-full rounded-full bg-green-500 transition-all"
                         style={{ width: `${job.progress}%` }}

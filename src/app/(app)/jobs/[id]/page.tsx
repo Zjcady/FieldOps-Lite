@@ -158,7 +158,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="p-4 md:p-6">
-      <Link href="/jobs" className="mb-4 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+      <Link href="/jobs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
         <ArrowLeft className="h-4 w-4" />
         Back to Jobs
       </Link>
@@ -173,24 +173,24 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
       {/* Quick Info */}
       <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <Card className="p-3">
-          <div className="text-xl font-semibold text-green-400">{job.progress}%</div>
-          <div className="text-[11px] uppercase text-muted-foreground">Complete</div>
+        <Card className="border-l-[3px] border-l-green-400 p-3">
+          <div className="text-xl font-bold text-green-400">{job.progress}%</div>
+          <div className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">Complete</div>
         </Card>
-        <Card className="p-3">
-          <div className="text-xl font-semibold text-blue-400">{formatDate(job.estimatedEnd)}</div>
-          <div className="text-[11px] uppercase text-muted-foreground">Est. Finish</div>
+        <Card className="border-l-[3px] border-l-blue-400 p-3">
+          <div className="text-xl font-bold text-blue-400">{formatDate(job.estimatedEnd)}</div>
+          <div className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">Est. Finish</div>
         </Card>
         {job.estimatedCost && (
-          <Card className="p-3">
-            <div className="text-xl font-semibold text-amber-400">{formatCurrency(job.estimatedCost)}</div>
-            <div className="text-[11px] uppercase text-muted-foreground">Budget</div>
+          <Card className="border-l-[3px] border-l-amber-400 p-3">
+            <div className="text-xl font-bold text-amber-400">{formatCurrency(job.estimatedCost)}</div>
+            <div className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">Budget</div>
           </Card>
         )}
         {job.actualCost && (
-          <Card className="p-3">
-            <div className="text-xl font-semibold text-green-400">{formatCurrency(job.actualCost)}</div>
-            <div className="text-[11px] uppercase text-muted-foreground">Actual</div>
+          <Card className="border-l-[3px] border-l-green-400 p-3">
+            <div className="text-xl font-bold text-green-400">{formatCurrency(job.actualCost)}</div>
+            <div className="mt-0.5 text-[11px] uppercase tracking-wider text-muted-foreground">Actual</div>
           </Card>
         )}
       </div>
@@ -305,19 +305,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </TabsContent>
 
         <TabsContent value="photos" className="mt-4">
-          <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-xl">
+          <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {job.photos.map((photo) => (
-              <div
+              <Card
                 key={photo.id}
-                className="relative flex aspect-square items-center justify-center bg-card text-2xl"
+                className="group relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden transition-all hover:border-primary/30"
               >
-                <ImageIcon className="h-8 w-8 text-muted-foreground/30" />
-                {photo.caption && (
-                  <div className="absolute bottom-1 left-0 right-0 text-center text-[9px] text-muted-foreground">
-                    {photo.caption}
-                  </div>
-                )}
-              </div>
+                <div className="flex flex-col items-center gap-2">
+                  <ImageIcon className="h-8 w-8 text-muted-foreground/20 transition-colors group-hover:text-muted-foreground/40" />
+                  {photo.caption && (
+                    <div className="px-2 text-center text-[10px] leading-tight text-muted-foreground">
+                      {photo.caption}
+                    </div>
+                  )}
+                </div>
+                <div className="absolute right-1.5 top-1.5">
+                  <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground">
+                    {photo.category}
+                  </span>
+                </div>
+              </Card>
             ))}
           </div>
         </TabsContent>

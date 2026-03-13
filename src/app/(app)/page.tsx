@@ -57,6 +57,7 @@ export default async function DashboardPage() {
           change="↑ 2 from last week"
           changeColor="text-green-400"
           valueColor="text-blue-400"
+          borderColor="border-l-blue-400"
         />
         <MetricCard
           value={pendingPermits}
@@ -64,6 +65,7 @@ export default async function DashboardPage() {
           change="1 expiring soon"
           changeColor="text-amber-400"
           valueColor="text-amber-400"
+          borderColor="border-l-amber-400"
         />
         <MetricCard
           value={formatCurrency(totalRev)}
@@ -71,6 +73,7 @@ export default async function DashboardPage() {
           change="↑ 11% vs last mo"
           changeColor="text-green-400"
           valueColor="text-green-400"
+          borderColor="border-l-green-400"
         />
         <MetricCard
           value={crewsOut}
@@ -78,6 +81,7 @@ export default async function DashboardPage() {
           change="2 unassigned"
           changeColor="text-muted-foreground"
           valueColor="text-purple-400"
+          borderColor="border-l-purple-400"
         />
       </div>
 
@@ -93,7 +97,7 @@ export default async function DashboardPage() {
       <div className="mb-6 space-y-3">
         {todaysJobs.map((job) => (
           <Link key={job.id} href={`/jobs/${job.id}`}>
-            <Card className="cursor-pointer p-4 transition-colors hover:border-primary/30">
+            <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]">
               <div className="mb-1.5 flex items-start justify-between gap-2">
                 <h3 className="text-sm font-semibold leading-tight">{job.title}</h3>
                 <StatusBadge status={job.status} />
@@ -119,7 +123,7 @@ export default async function DashboardPage() {
               </div>
               {job.progress > 0 && (
                 <div className="mt-2.5">
-                  <div className="h-1 overflow-hidden rounded-full bg-border">
+                  <div className="h-1.5 overflow-hidden rounded-full bg-border">
                     <div
                       className="h-full rounded-full bg-green-500 transition-all"
                       style={{ width: `${job.progress}%` }}

@@ -100,7 +100,7 @@ export default function CrewPage() {
                     {activeJob.progress}% done
                   </div>
                   {activeJob.progress > 0 && (
-                    <Progress value={activeJob.progress} className="mt-2 h-1" />
+                    <Progress value={activeJob.progress} className="mt-2 h-1.5" />
                   )}
                 </div>
               )}
