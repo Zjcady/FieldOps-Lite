@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       email: body.email || null,
       phone: body.phone || null,
       address: body.address || null,
+      portalToken: crypto.randomUUID().replace(/-/g, "").substring(0, 12),
     },
   });
 

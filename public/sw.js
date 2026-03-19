@@ -26,6 +26,10 @@ self.addEventListener("fetch", (event) => {
       fetch(event.request).catch(() => caches.match(event.request))
     );
   } else if (event.request.mode === "navigate") {
+    const url = new URL(event.request.url);
+    if (url.pathname.startsWith("/login") || url.pathname.startsWith("/signup")) {
+      return; // Don't cache auth pages
+    }
     event.respondWith(
       fetch(event.request).catch(() => caches.match("/"))
     );

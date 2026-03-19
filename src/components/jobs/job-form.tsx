@@ -71,6 +71,7 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      <fieldset disabled={submitting}>
       <Card className="p-4 space-y-3">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">Job Details</h3>
         <div>
@@ -184,6 +185,7 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
           </div>
         </div>
       </Card>
+      </fieldset>
 
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

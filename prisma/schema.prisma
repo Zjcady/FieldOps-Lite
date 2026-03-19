@@ -177,6 +177,8 @@ model Job {
   @@index([category])
   @@index([priority])
   @@index([scheduledDate])
+  @@unique([companyId, jobNumber])
+  @@index([companyId, status])
 }
 
 model Task {
@@ -221,7 +223,7 @@ model Note {
   createdAt DateTime @default(now())
 
   job  Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user User? @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([jobId])
 }
@@ -359,7 +361,7 @@ model ActivityLog {
   createdAt DateTime @default(now())
 
   job  Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
-  user User? @relation(fields: [userId], references: [id])
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   @@index([jobId])
 }
@@ -445,4 +447,5 @@ model EmailRecipient {
   customer Customer      @relation(fields: [customerId], references: [id])
 
   @@index([campaignId])
+  @@unique([campaignId, customerId])
 }

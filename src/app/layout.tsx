@@ -45,7 +45,7 @@ export default function RootLayout({
         <TooltipProvider>
           {children}
         </TooltipProvider>
-        <Toaster />
+        <div role="status" aria-live="polite"><Toaster /></div>
         <Script id="sw-register" strategy="lazyOnload">
           {`if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js').catch(()=>{})}`}
         </Script>

@@ -16,6 +16,8 @@ interface Alert {
   message: string;
 }
 
+let alertsCache: { data: Alert[] | null; ts: number } = { data: null, ts: 0 };
+
 export function Header() {
   const user = useUser();
   const initials = user
@@ -27,8 +29,12 @@ export function Header() {
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Fetch alerts from dashboard summary API
+  // Fetch alerts from dashboard summary API (with 60s cache)
   useEffect(() => {
+    if (Date.now() - alertsCache.ts < 60000 && alertsCache.data) {
+      setAlerts(alertsCache.data);
+      return;
+    }
     fetch("/api/reports/summary")
       .then((r) => r.ok ? r.json() : null)
       .then((data) => {
@@ -41,6 +47,7 @@ export function Header() {
         if (data.activeJobs > 3) {
           newAlerts.push({ id: "jobs", type: "inspection_passed", title: "Active Jobs", message: `${data.activeJobs} jobs currently in progress` });
         }
+        alertsCache = { data: newAlerts, ts: Date.now() };
         setAlerts(newAlerts);
       })
       .catch((e) => console.warn("[FieldOps] Failed to load notifications:", e));

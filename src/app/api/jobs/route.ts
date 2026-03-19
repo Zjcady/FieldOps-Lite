@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, getPagination, getSafeSearch, validateBody, safeDate } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, getPagination, getSafeSearch, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
 import { jobCreateSchema } from "@/lib/validations/job";
 
 export async function GET(request: NextRequest) {
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
     take,
   });
 
-  return NextResponse.json(jobs);
+  return withRequestId(NextResponse.json(jobs));
 }
 
 export async function POST(request: NextRequest) {

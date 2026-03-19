@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, safeDate } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
 import { jobUpdateSchema } from "@/lib/validations/job";
 
 export async function GET(
@@ -34,7 +34,7 @@ export async function GET(
 
   if (!job) return apiError("Job not found", 404);
 
-  return NextResponse.json(job);
+  return withRequestId(NextResponse.json(job));
 }
 
 export async function PUT(

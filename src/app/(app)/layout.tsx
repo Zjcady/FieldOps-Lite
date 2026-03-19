@@ -3,6 +3,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserProvider } from "@/lib/auth/user-context";
+import { FocusReset } from "@/components/shared/focus-reset";
 import { getUser } from "@/lib/auth/get-user";
 
 export default async function AppLayout({
@@ -14,6 +15,7 @@ export default async function AppLayout({
 
   return (
     <UserProvider user={user}>
+      <FocusReset />
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"

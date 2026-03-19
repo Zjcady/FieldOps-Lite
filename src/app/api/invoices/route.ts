@@ -1,3 +1,4 @@
+// TODO: When creating invoices, validate that subtotal = sum(lineItems.total) and total = subtotal + tax
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateApi } from "@/lib/api-utils";

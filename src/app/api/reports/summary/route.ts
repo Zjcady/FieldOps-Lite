@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi } from "@/lib/api-utils";
+import { authenticateApi, withRequestId } from "@/lib/api-utils";
 
 export async function GET() {
   const [user, errorRes] = await authenticateApi();

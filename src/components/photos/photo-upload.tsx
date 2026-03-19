@@ -118,7 +118,9 @@ export function PhotoUpload({ jobId, onUploaded }: PhotoUploadProps) {
               <X className="h-3.5 w-3.5" />
             </button>
           </div>
+          <label htmlFor="photo-caption" className="sr-only">Caption</label>
           <input
+            id="photo-caption"
             placeholder="Caption (optional)"
             value={caption}
             onChange={(e) => setCaption(e.target.value)}

@@ -37,6 +37,12 @@ export async function POST(request: NextRequest) {
   const [body, valErr] = await validateBody(request, campaignCreateSchema);
   if (valErr) return valErr;
 
+  // (#4/#8) Validate template value — only allow known templates, default to "general"
+  const VALID_TEMPLATES = ["general", "seasonal_discount", "followup", "referral", "maintenance_reminder"] as const;
+  if (!body.template || !VALID_TEMPLATES.includes(body.template as typeof VALID_TEMPLATES[number])) {
+    body.template = "general";
+  }
+
   // Get eligible customers based on filter
   let customerWhere: Record<string, unknown> = { companyId: user.companyId, email: { not: null } };
   if (body.filter === "past") {

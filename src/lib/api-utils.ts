@@ -23,6 +23,12 @@ export function apiSuccess<T>(data: T, status = 200) {
   });
 }
 
+// ── Attach request ID to any existing response (#25) ──────────────────
+export function withRequestId(response: NextResponse): NextResponse {
+  response.headers.set("x-request-id", getRequestId());
+  return response;
+}
+
 // ── Shared error response ──────────────────────────────────────────────
 export function apiError(message: string, status: number) {
   const sanitized = status >= 500 ? "Internal server error" : message;

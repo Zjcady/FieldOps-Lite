@@ -8,15 +8,24 @@ import prisma from "@/lib/prisma";
  * In production (Supabase configured), this endpoint is a no-op.
  */
 export async function POST(request: NextRequest) {
+  // Hard guard: never allow dev-login in production
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   // Only works when Supabase is NOT configured
   if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return NextResponse.json({ message: "Production mode — use Supabase auth" });
+    const res = NextResponse.json({ message: "Production mode — use Supabase auth" });
+    res.headers.set("Cache-Control", "no-store, no-cache");
+    return res;
   }
 
   const { authId, email } = await request.json();
 
   if (!authId && !email) {
-    return NextResponse.json({ error: "authId or email required" }, { status: 400 });
+    const errRes = NextResponse.json({ error: "authId or email required" }, { status: 400 });
+    errRes.headers.set("Cache-Control", "no-store, no-cache");
+    return errRes;
   }
 
   // Find the user by authId or email
@@ -25,10 +34,13 @@ export async function POST(request: NextRequest) {
     : await prisma.user.findFirst({ where: { email }, select: { authId: true, name: true, email: true } });
 
   if (!user || !user.authId) {
-    return NextResponse.json({ error: "User not found" }, { status: 404 });
+    const errRes = NextResponse.json({ error: "User not found" }, { status: 404 });
+    errRes.headers.set("Cache-Control", "no-store, no-cache");
+    return errRes;
   }
 
   const response = NextResponse.json({ success: true, name: user.name, email: user.email });
+  response.headers.set("Cache-Control", "no-store, no-cache");
 
   // Set the dev auth cookie
   response.cookies.set(DEV_AUTH_COOKIE, user.authId, {
@@ -46,7 +58,13 @@ export async function POST(request: NextRequest) {
  * Dev mode: clear the dev auth cookie (sign out).
  */
 export async function DELETE() {
+  // Hard guard: never allow dev-login in production
+  if (process.env.NODE_ENV === "production") {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
   const response = NextResponse.json({ success: true });
+  response.headers.set("Cache-Control", "no-store, no-cache");
   response.cookies.delete(DEV_AUTH_COOKIE);
   return response;
 }

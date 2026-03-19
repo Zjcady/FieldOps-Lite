@@ -9,16 +9,20 @@ export async function POST(request: NextRequest) {
   const { authId, email, name, companyName } = await request.json();
 
   if (!authId || !email || !name || !companyName) {
-    return NextResponse.json(
+    const errRes = NextResponse.json(
       { error: "Missing required fields" },
       { status: 400 }
     );
+    errRes.headers.set("Cache-Control", "no-store, no-cache");
+    return errRes;
   }
 
   // Check if user already exists
   const existing = await prisma.user.findUnique({ where: { authId } });
   if (existing) {
-    return NextResponse.json({ message: "Already set up" });
+    const res = NextResponse.json({ message: "Already set up" });
+    res.headers.set("Cache-Control", "no-store, no-cache");
+    return res;
   }
 
   // Create company and user in a transaction
@@ -58,5 +62,7 @@ export async function POST(request: NextRequest) {
     return { company, user };
   });
 
-  return NextResponse.json(result, { status: 201 });
+  const response = NextResponse.json(result, { status: 201 });
+  response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate");
+  return response;
 }
