@@ -67,13 +67,17 @@ export function AppSidebar() {
   const handleSignOut = async () => {
     setSigningOut(true);
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push("/login");
-      router.refresh();
+      // Only call Supabase signOut if configured
+      if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+        const supabase = createClient();
+        await supabase.auth.signOut();
+      }
     } catch {
-      setSigningOut(false);
+      // Sign-out API failed, but still navigate to login
     }
+    // Always navigate to login page regardless of Supabase state
+    router.push("/login");
+    router.refresh();
   };
 
   return (
