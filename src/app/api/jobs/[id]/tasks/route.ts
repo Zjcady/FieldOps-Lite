@@ -38,18 +38,12 @@ export async function POST(
   const [body, valErr] = await validateBody(request, taskCreateSchema);
   if (valErr) return valErr;
 
-  const maxOrder = await prisma.task.findFirst({
-    where: { jobId: id },
-    orderBy: { sortOrder: "desc" },
-    select: { sortOrder: true },
-  });
-
   const task = await prisma.task.create({
     data: {
       jobId: id,
       title: body.title,
       description: body.description || null,
-      sortOrder: (maxOrder?.sortOrder ?? -1) + 1,
+      sortOrder: Date.now(),
     },
   });
 

@@ -82,6 +82,7 @@ export default function CustomersPage() {
         </Card>
       )}
 
+      <div aria-busy={loading}>
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => <Card key={i} className="h-20 animate-pulse p-4" />)}
@@ -126,6 +127,7 @@ export default function CustomersPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

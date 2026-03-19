@@ -54,7 +54,7 @@ export default function PermitsPage() {
 
   if (loading) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6" aria-busy={true}>
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
         <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
       </div>

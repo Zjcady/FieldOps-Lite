@@ -14,7 +14,7 @@ export async function GET() {
   const byCategory: Record<string, number> = {};
   for (const job of jobs) {
     const cat = job.category || "Other";
-    byCategory[cat] = (byCategory[cat] || 0) + (job.actualCost || job.estimatedCost || 0);
+    byCategory[cat] = (byCategory[cat] || 0) + Number(job.actualCost || job.estimatedCost || 0);
   }
 
   const chartData = Object.entries(byCategory)
@@ -28,16 +28,16 @@ export async function GET() {
 
   const totalPaid = invoices
     .filter((i) => i.status === "paid")
-    .reduce((sum, i) => sum + i.total, 0);
+    .reduce((sum, i) => sum + Number(i.total), 0);
 
   const totalOutstanding = invoices
     .filter((i) => i.status === "sent")
-    .reduce((sum, i) => sum + i.total, 0);
+    .reduce((sum, i) => sum + Number(i.total), 0);
 
   return NextResponse.json({
     revenueByCategory: chartData,
     totalPaid,
     totalOutstanding,
     totalRevenue: totalPaid + totalOutstanding,
-  });
+  }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } });
 }

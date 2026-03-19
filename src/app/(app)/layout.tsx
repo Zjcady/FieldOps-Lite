@@ -14,11 +14,17 @@ export default async function AppLayout({
 
   return (
     <UserProvider user={user}>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to content
+      </a>
       <SidebarProvider defaultOpen>
         <AppSidebar />
         <div className="flex min-h-screen flex-1 flex-col">
           <Header />
-          <main className="flex-1 pb-20 md:pb-0">{children}</main>
+          <main id="main-content" className="flex-1 pb-20 md:pb-0">{children}</main>
           <MobileNav />
         </div>
       </SidebarProvider>

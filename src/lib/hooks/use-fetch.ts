@@ -97,7 +97,7 @@ export function useFetchAll<T extends unknown[]>(
       }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [JSON.stringify(urls)]);
+  }, [urls.join(",")]);
 
   useEffect(() => {
     mountedRef.current = true;

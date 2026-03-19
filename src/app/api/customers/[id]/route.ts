@@ -49,7 +49,7 @@ export async function PUT(
   if (!existing) return apiError("Customer not found", 404);
 
   const updated = await prisma.customer.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       name: name.trim(),
       email: email || null,

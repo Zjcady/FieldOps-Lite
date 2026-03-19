@@ -44,29 +44,34 @@ export async function POST(request: NextRequest) {
   const [data, valErr] = await validateBody(request, jobCreateSchema);
   if (valErr) return valErr;
 
-  const jobCount = await prisma.job.count({ where: { companyId: user.companyId } });
-  const jobNumber = `JOB-${new Date().getFullYear()}-${String(jobCount + 1).padStart(3, "0")}`;
+  const year = new Date().getFullYear();
+  const result = await prisma.$transaction(async (tx) => {
+    // Lock-free unique job number using random suffix
+    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const jobNumber = `JOB-${year}-${rand}`;
 
-  const job = await prisma.job.create({
-    data: {
-      companyId: user.companyId,
-      customerId: data.customerId,
-      propertyId: data.propertyId || null,
-      crewId: data.crewId || null,
-      jobNumber,
-      title: data.title,
-      description: data.description || null,
-      type: data.type,
-      category: data.category || null,
-      priority: data.priority,
-      scheduledDate: safeDate(data.scheduledDate),
-      estimatedEnd: safeDate(data.estimatedEnd),
-      estimatedCost: data.estimatedCost ?? null,
-      estimatedHours: data.estimatedHours ?? null,
-      address: data.address || null,
-    },
-    include: { customer: true, crew: true },
+    const job = await tx.job.create({
+      data: {
+        companyId: user.companyId,
+        customerId: data.customerId,
+        jobNumber,
+        title: data.title,
+        description: data.description || null,
+        type: data.type,
+        category: data.category || null,
+        priority: data.priority,
+        scheduledDate: safeDate(data.scheduledDate),
+        estimatedEnd: safeDate(data.estimatedEnd),
+        estimatedCost: data.estimatedCost ?? null,
+        estimatedHours: data.estimatedHours ?? null,
+        address: data.address || null,
+        propertyId: data.propertyId || null,
+        crewId: data.crewId || null,
+      },
+      include: { customer: true, crew: true },
+    });
+    return job;
   });
 
-  return NextResponse.json(job, { status: 201 });
+  return NextResponse.json(result, { status: 201 });
 }

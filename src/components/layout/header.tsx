@@ -43,10 +43,10 @@ export function Header() {
         }
         setAlerts(newAlerts);
       })
-      .catch(() => {});
+      .catch((e) => console.warn("[FieldOps] Failed to load notifications:", e));
   }, []);
 
-  // Close on click outside
+  // Close on click outside or Escape key
   useEffect(() => {
     if (!showNotifications) return;
     const handleClick = (e: MouseEvent) => {
@@ -54,8 +54,15 @@ export function Header() {
         setShowNotifications(false);
       }
     };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setShowNotifications(false);
+    };
     document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("keydown", handleKey);
+    };
   }, [showNotifications]);
 
   const visibleAlerts = alerts.filter((a) => !dismissed.has(a.id));

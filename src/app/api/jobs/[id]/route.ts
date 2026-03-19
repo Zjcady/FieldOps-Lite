@@ -11,6 +11,9 @@ export async function GET(
   if (errorRes) return errorRes;
 
   const { id } = await params;
+  // TODO (#50,#59): Future optimization — load tab data (photos, notes,
+  // materials, activity logs) lazily via separate endpoints (e.g.
+  // /api/jobs/[id]/photos) instead of eagerly including everything here.
   const job = await prisma.job.findUnique({
     where: { id, companyId: user.companyId },
     include: {

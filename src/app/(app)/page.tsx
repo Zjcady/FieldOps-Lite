@@ -105,8 +105,8 @@ export default async function DashboardPage() {
     }),
   ]);
 
-  const totalRev = revenue._sum.total ?? 0;
-  const lastMonthTotal = lastMonthRevenue._sum.total ?? 0;
+  const totalRev = Number(revenue._sum.total ?? 0);
+  const lastMonthTotal = Number(lastMonthRevenue._sum.total ?? 0);
   const revChangePercent = lastMonthTotal > 0
     ? Math.round(((totalRev - lastMonthTotal) / lastMonthTotal) * 100)
     : 0;

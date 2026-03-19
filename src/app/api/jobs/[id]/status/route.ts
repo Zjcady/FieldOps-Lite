@@ -28,19 +28,23 @@ export async function PATCH(
   if (newStatus === "active" && !job.startDate) updateData.startDate = new Date();
   if (newStatus === "completed") updateData.completedDate = new Date();
 
-  const updated = await prisma.job.update({
-    where: { id },
-    data: updateData,
-    include: { customer: true, crew: true },
-  });
+  const updated = await prisma.$transaction(async (tx) => {
+    const updatedJob = await tx.job.update({
+      where: { id },
+      data: updateData,
+      include: { customer: true, crew: true },
+    });
 
-  await prisma.activityLog.create({
-    data: {
-      jobId: id,
-      userId: user.id,
-      action: "status_change",
-      details: JSON.stringify({ from: job.status, to: newStatus }),
-    },
+    await tx.activityLog.create({
+      data: {
+        jobId: id,
+        userId: user.id,
+        action: "status_change",
+        details: JSON.stringify({ from: job.status, to: newStatus }),
+      },
+    });
+
+    return updatedJob;
   });
 
   return NextResponse.json(updated);

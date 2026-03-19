@@ -146,8 +146,8 @@ model Job {
   estimatedEnd   DateTime?
   estimatedHours Float?
   actualHours    Float?
-  estimatedCost  Float?
-  actualCost     Float?
+  estimatedCost  Decimal?  @db.Decimal(12, 2)
+  actualCost     Decimal?  @db.Decimal(12, 2)
   progress       Int       @default(0)
   address        String?
   isArchived     Boolean   @default(false)
@@ -236,7 +236,7 @@ model Permit {
   jurisdiction String?
   issuedDate   DateTime?
   expiryDate   DateTime?
-  cost         Float?
+  cost         Decimal?  @db.Decimal(12, 2)
   notes        String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -279,8 +279,8 @@ model Material {
   name         String
   quantity     Float
   unit         String    @default("each")
-  unitCost     Float?
-  totalCost    Float?
+  unitCost     Decimal?  @db.Decimal(12, 2)
+  totalCost    Decimal?  @db.Decimal(12, 2)
   status       String    @default("needed")
   orderedDate  DateTime?
   deliveryDate        DateTime?
@@ -318,9 +318,9 @@ model Invoice {
   jobId         String
   invoiceNumber String    @unique
   status        String    @default("draft")
-  subtotal      Float
-  tax           Float     @default(0)
-  total         Float
+  subtotal      Decimal   @db.Decimal(12, 2)
+  tax           Decimal   @default(0) @db.Decimal(12, 2)
+  total         Decimal   @db.Decimal(12, 2)
   dueDate       DateTime?
   paidDate      DateTime?
   notes         String?
@@ -341,8 +341,8 @@ model InvoiceLineItem {
   invoiceId   String
   description String
   quantity    Float   @default(1)
-  unitPrice   Float
-  total       Float
+  unitPrice   Decimal   @db.Decimal(12, 2)
+  total       Decimal   @db.Decimal(12, 2)
   type        String  @default("service")
 
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)

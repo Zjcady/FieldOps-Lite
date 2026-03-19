@@ -26,5 +26,5 @@ export async function GET() {
     totalRevenue: totalRevenue._sum.total ?? 0,
     crewsOut,
     recentActivity,
-  });
+  }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } });
 }

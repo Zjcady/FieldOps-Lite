@@ -312,7 +312,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <div className="space-y-3">
                 {merged.notes.map((note) => (
                   <div key={note.id} className="rounded-lg border border-border p-3">
-                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                    <p className="text-sm whitespace-pre-wrap break-words">{note.content}</p>
                     <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
                       <span>{note.user?.name || "System"}</span>
                       <span>&middot;</span>

@@ -23,7 +23,9 @@ export async function GET(request: NextRequest) {
     return apiError(`Invalid export type. Allowed: ${[...ALLOWED_TYPES].join(", ")}`, 400);
   }
 
-  const { skip, take } = getPagination(request);
+  // Hard limit exports to 10 000 rows to prevent memory/timeout issues (#14,#55)
+  const { skip, take: rawTake } = getPagination(request, 10000);
+  const take = Math.min(rawTake, 10000);
   const companyId = user.companyId;
 
   if (type === "jobs") {

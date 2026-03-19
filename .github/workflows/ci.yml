@@ -31,11 +31,11 @@ jobs:
       - name: Generate Prisma Client
         run: npx prisma generate
 
-      - name: Lint
-        run: npm run lint
-
       - name: Type check
         run: npx tsc --noEmit
+
+      - name: Lint
+        run: npm run lint
 
       - name: Build
         run: npm run build
@@ -51,6 +51,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -61,5 +63,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Check for schema changes
+        id: schema_check
+        run: |
+          if git diff HEAD~1 --name-only | grep -q "prisma/schema.prisma"; then
+            echo "changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "changed=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Push DB schema
+        if: steps.schema_check.outputs.changed == 'true'
         run: npx prisma migrate deploy

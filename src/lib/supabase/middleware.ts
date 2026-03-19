@@ -36,6 +36,7 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+  const SAFE_PATHS = /^\/[a-zA-Z0-9/_-]*$/;
 
   // Public routes that don't need auth
   const isPublicRoute =
@@ -49,7 +50,9 @@ export async function updateSession(request: NextRequest) {
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.searchParams.set("next", pathname);
+    if (SAFE_PATHS.test(pathname)) {
+      url.searchParams.set("next", pathname);
+    }
     return NextResponse.redirect(url);
   }
 

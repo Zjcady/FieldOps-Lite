@@ -5,9 +5,28 @@ import { z } from "zod";
 // Re-export for convenience
 export type { AppUser };
 
+// ── Request ID ──────────────────────────────────────────────────────
+// Generates a unique request ID for tracing. In production, Vercel adds
+// x-vercel-id automatically — this provides a fallback for all environments.
+export function getRequestId(): string {
+  return crypto.randomUUID();
+}
+
+// ── Export hard limit (#55) ─────────────────────────────────────────
+export const EXPORT_LIMIT = 10000;
+
+// ── Success response with request ID (#62,#63) ─────────────────────────
+export function apiSuccess<T>(data: T, status = 200) {
+  return NextResponse.json(data, {
+    status,
+    headers: { "x-request-id": getRequestId() },
+  });
+}
+
 // ── Shared error response ──────────────────────────────────────────────
 export function apiError(message: string, status: number) {
-  return NextResponse.json({ error: message }, { status });
+  const sanitized = status >= 500 ? "Internal server error" : message;
+  return NextResponse.json({ error: sanitized, requestId: getRequestId() }, { status });
 }
 
 // ── Auth ────────────────────────────────────────────────────────────────
@@ -85,7 +104,7 @@ export function validateCoords(lat: unknown, lng: unknown): { lat: number | null
 }
 
 // ── Pagination (#8) ─────────────────────────────────────────────────────
-export function getPagination(request: NextRequest, defaultLimit = 50) {
+export function getPagination(request: NextRequest, defaultLimit = 25) {
   const { searchParams } = new URL(request.url);
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
   const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || String(defaultLimit), 10) || defaultLimit));

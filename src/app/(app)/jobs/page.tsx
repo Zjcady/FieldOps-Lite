@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -33,8 +33,13 @@ const FILTERS = [
 export default function JobsPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
   const params = filter !== "all" ? `?status=${filter}` : "";
-  const searchParam = search ? `${params ? "&" : "?"}search=${encodeURIComponent(search)}` : "";
+  const searchParam = debouncedSearch ? `${params ? "&" : "?"}search=${encodeURIComponent(debouncedSearch)}` : "";
   const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}${searchParam}`);
 
   return (
@@ -88,6 +93,7 @@ export default function JobsPage() {
         </Card>
       )}
 
+      <div aria-busy={loading}>
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -145,6 +151,7 @@ export default function JobsPage() {
           ))}
         </div>
       )}
+      </div>
     </div>
   );
 }

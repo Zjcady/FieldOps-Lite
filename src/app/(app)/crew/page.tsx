@@ -142,7 +142,7 @@ export default function CrewPage() {
                         {lead ? `Lead: ${lead.user.name}` : "No lead"} · {crew.members.length} members · Available
                       </div>
                     </div>
-                    <Button size="sm" variant="default">
+                    <Button size="sm" variant="default" nativeButton={false} render={<Link href="/crew/schedule" />}>
                       Assign
                     </Button>
                   </div>

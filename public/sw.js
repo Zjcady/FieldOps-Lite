@@ -59,7 +59,8 @@ async function uploadPendingPhotos() {
     const tx = db.transaction(STORE_NAME, "readonly");
     const store = tx.objectStore(STORE_NAME);
     const items = await new Promise((resolve, reject) => {
-      const req = store.getAll();
+      // Limit to 50 items to avoid excessive memory usage (#53,#60)
+      const req = store.getAll(null, 50);
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error);
     });

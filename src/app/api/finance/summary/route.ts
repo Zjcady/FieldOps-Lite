@@ -41,23 +41,27 @@ export async function GET(request: NextRequest) {
     }),
   ]);
 
-  // Revenue metrics
-  const totalInvoiced = invoices.reduce((s, i) => s + i.total, 0);
-  const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + i.total, 0);
-  const totalOutstanding = invoices.filter((i) => ["sent", "overdue"].includes(i.status)).reduce((s, i) => s + i.total, 0);
+  // Revenue metrics (Number() handles Decimal → number conversion)
+  const totalInvoiced = invoices.reduce((s, i) => s + Number(i.total), 0);
+  const totalPaid = invoices.filter((i) => i.status === "paid").reduce((s, i) => s + Number(i.total), 0);
+  const totalOutstanding = invoices.filter((i) => ["sent", "overdue"].includes(i.status)).reduce((s, i) => s + Number(i.total), 0);
 
   // Margin analysis per job
   const marginByJob = jobs
     .filter((j) => j.estimatedCost && j.actualCost)
-    .map((j) => ({
-      title: j.title,
-      customer: j.customer?.name || "Unknown",
-      category: j.category,
-      estimated: j.estimatedCost!,
-      actual: j.actualCost!,
-      margin: j.estimatedCost! - j.actualCost!,
-      marginPct: ((j.estimatedCost! - j.actualCost!) / j.estimatedCost!) * 100,
-    }))
+    .map((j) => {
+      const estimated = Number(j.estimatedCost!);
+      const actual = Number(j.actualCost!);
+      return {
+        title: j.title,
+        customer: j.customer?.name || "Unknown",
+        category: j.category,
+        estimated,
+        actual,
+        margin: estimated - actual,
+        marginPct: estimated > 0 ? ((estimated - actual) / estimated) * 100 : 0,
+      };
+    })
     .sort((a, b) => b.marginPct - a.marginPct);
 
   // Category performance
@@ -65,8 +69,8 @@ export async function GET(request: NextRequest) {
   jobs.forEach((j) => {
     const cat = j.category || "Other";
     const entry = catMap.get(cat) || { revenue: 0, cost: 0, jobs: 0 };
-    entry.revenue += j.estimatedCost || 0;
-    entry.cost += j.actualCost || 0;
+    entry.revenue += Number(j.estimatedCost || 0);
+    entry.cost += Number(j.actualCost || 0);
     entry.jobs += 1;
     catMap.set(cat, entry);
   });
