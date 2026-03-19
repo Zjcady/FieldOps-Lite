@@ -345,6 +345,43 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             ))}
           </div>
         )}
+        {/* Contractor reply form */}
+        <div className="mt-3 flex gap-2">
+          <Input
+            placeholder="Reply to customer..."
+            id="contractor-reply"
+            onKeyDown={async (e) => {
+              if (e.key !== "Enter") return;
+              const input = e.currentTarget;
+              const content = input.value.trim();
+              if (!content) return;
+              input.disabled = true;
+              try {
+                const res = await fetch(`/api/customers/${id}/messages`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ content }),
+                });
+                if (res.ok) {
+                  input.value = "";
+                  toast.success("Reply sent!");
+                  refetch();
+                } else {
+                  toast.error("Failed to send");
+                }
+              } catch { toast.error("Network error"); }
+              input.disabled = false;
+            }}
+          />
+          <Button size="sm" onClick={() => {
+            const input = document.getElementById("contractor-reply") as HTMLInputElement;
+            if (input) {
+              input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
+            }
+          }}>
+            Send
+          </Button>
+        </div>
       </Card>
 
       {customer.properties.length > 0 && (

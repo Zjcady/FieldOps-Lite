@@ -21,7 +21,7 @@ interface PortalJob {
   estimatedEnd: string | null;
   description: string | null;
   tasks: { id: string; title: string; status: string }[];
-  photos: { id: string; caption: string | null; category: string; createdAt: string }[];
+  photos: { id: string; url: string; caption: string | null; category: string; createdAt: string }[];
   permits: { id: string; type: string; status: string }[];
   inspections: { id: string; type: string; status: string; scheduledDate: string | null }[];
   activityLogs: { id: string; action: string; details: string | null; createdAt: string }[];
@@ -49,7 +49,7 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
   const [message, setMessage] = useState("");
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
+  const fetchData = () => {
     fetch(`/api/portal/${token}`)
       .then((r) => {
         if (!r.ok) throw new Error("Not found");
@@ -57,7 +57,21 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
       })
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [token]);
+  };
+
+  useEffect(() => {
+    fetchData();
+    // Poll for new messages every 30 seconds
+    const interval = setInterval(fetchData, 30000);
+    return () => clearInterval(interval);
+  }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Mark messages as read when portal loads
+  useEffect(() => {
+    if (data && data.messages.length > 0) {
+      fetch(`/api/portal/${token}/messages`, { method: "PATCH" }).catch(() => {});
+    }
+  }, [data?.messages.length, token]);
 
   const sendMessage = async () => {
     if (!message.trim()) return;
@@ -170,10 +184,15 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
                 </h2>
                 <div className="grid grid-cols-3 gap-1 overflow-hidden rounded-lg">
                   {job.photos.map((photo) => (
-                    <div key={photo.id} className="relative flex aspect-square items-center justify-center bg-secondary">
-                      <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                    <div key={photo.id} className="relative flex aspect-square items-center justify-center overflow-hidden bg-secondary">
+                      {photo.url && photo.url.startsWith("http") ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={photo.url} alt={photo.caption || "Project photo"} className="h-full w-full object-cover" loading="lazy" />
+                      ) : (
+                        <ImageIcon className="h-6 w-6 text-muted-foreground/30" />
+                      )}
                       {photo.caption && (
-                        <div className="absolute bottom-1 left-0 right-0 text-center text-[8px] text-muted-foreground">
+                        <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-1 text-center text-[8px] text-white">
                           {photo.caption}
                         </div>
                       )}

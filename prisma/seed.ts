@@ -451,9 +451,9 @@ async function main() {
   await prisma.portalMessage.createMany({
     data: [
       { customerId: custIds.martinez, senderType: "customer", content: "When will the pavers be finished? We're excited to use the patio!", createdAt: d(0) },
-      { customerId: custIds.martinez, senderType: "company", content: "Hi Linda! Pavers should be fully set by Mar 14. We'll seal and clean up Mar 15. Looks great so far!", isRead: true, createdAt: d(0) },
+      { customerId: custIds.martinez, senderType: "contractor", content: "Hi Linda! Pavers should be fully set by Mar 14. We'll seal and clean up Mar 15. Looks great so far!", isRead: true, createdAt: d(0) },
       { customerId: custIds.sanders, senderType: "customer", content: "The enclosure is looking amazing! Can we add a pet door?", createdAt: d(-2) },
-      { customerId: custIds.sanders, senderType: "company", content: "Thanks Tom! We can absolutely add a pet door. I'll get you a quote by tomorrow.", isRead: true, createdAt: d(-2) },
+      { customerId: custIds.sanders, senderType: "contractor", content: "Thanks Tom! We can absolutely add a pet door. I'll get you a quote by tomorrow.", isRead: true, createdAt: d(-2) },
     ],
   });
 
