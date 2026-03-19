@@ -94,6 +94,12 @@ export default function CustomersPage() {
         </Card>
       ) : (
         <div className="space-y-3">
+          {(customers ?? []).length === 0 && (
+            <Card className="p-8 text-center">
+              <Briefcase className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No customers yet. Add your first customer to get started.</p>
+            </Card>
+          )}
           {(customers ?? []).map((c) => (
             <Link key={c.id} href={`/customers/${c.id}`}>
               <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]">

@@ -133,14 +133,14 @@ export default function JobsPage() {
 
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4 flex items-center justify-between">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">All Jobs</h1>
           <p className="text-sm text-muted-foreground">
             {jobs?.length ?? 0} jobs
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/jobs/templates" />}>
             <LayoutTemplate className="mr-1 h-4 w-4" />
             Templates
@@ -166,12 +166,14 @@ export default function JobsPage() {
           placeholder="Search jobs... (Ctrl+K)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          aria-label="Search jobs"
           className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
         <div className="flex gap-2">
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">Start Date</label>
+            <label htmlFor="job-from-date" className="text-xs text-muted-foreground whitespace-nowrap">Start Date</label>
             <input
+              id="job-from-date"
               type="date"
               value={fromDate}
               onChange={(e) => setFromDate(e.target.value)}
@@ -179,8 +181,9 @@ export default function JobsPage() {
             />
           </div>
           <div className="flex items-center gap-1.5">
-            <label className="text-xs text-muted-foreground whitespace-nowrap">End Date</label>
+            <label htmlFor="job-to-date" className="text-xs text-muted-foreground whitespace-nowrap">End Date</label>
             <input
+              id="job-to-date"
               type="date"
               value={toDate}
               onChange={(e) => setToDate(e.target.value)}
@@ -226,6 +229,14 @@ export default function JobsPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {jobList.length === 0 && (
+            <Card className="p-8 text-center">
+              <AlertCircle className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">
+                {filter !== "all" || debouncedSearch ? "No jobs match your filters." : "No jobs yet. Create your first job to get started."}
+              </p>
+            </Card>
+          )}
           {jobList.map((job, index) => (
             <div
               key={job.id}

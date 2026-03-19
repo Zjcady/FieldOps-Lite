@@ -202,12 +202,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     <div className="p-4 md:p-6">
       <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Jobs", href: "/jobs" }, { label: merged?.title || "..." }]} />
 
-      <div className="mb-4 flex items-start justify-between gap-3">
+      <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">{merged.title}</h1>
           <p className="text-sm text-muted-foreground">{merged.jobNumber}</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/jobs/${id}/edit`} />}>
             <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
           </Button>
@@ -436,12 +436,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                   step="0.5"
                   min="0"
                   placeholder="Hours"
+                  aria-label="Hours to log"
                   value={timeHours}
                   onChange={(e) => setTimeHours(e.target.value)}
                   className="w-24 rounded-md border border-border bg-background px-3 py-1.5 text-sm"
                 />
                 <input
                   type="date"
+                  aria-label="Date for time entry"
                   value={timeDate}
                   onChange={(e) => setTimeDate(e.target.value)}
                   className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
@@ -449,6 +451,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               </div>
               <textarea
                 placeholder="Notes (optional)"
+                aria-label="Time entry notes"
                 value={timeNotes}
                 onChange={(e) => setTimeNotes(e.target.value)}
                 rows={2}
@@ -492,6 +495,9 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="space-y-1">
               {/* #34: aria-label on task buttons */}
               {/* // TODO: Wire up @dnd-kit for actual drag-to-reorder */}
+              {tasks.length === 0 && (
+                <p className="py-4 text-center text-sm text-muted-foreground">No tasks yet. Add one above.</p>
+              )}
               {tasks.map((task) => (
                 <div key={task.id} className="flex items-center gap-1">
                   <GripVertical className="h-4 w-4 flex-shrink-0 cursor-grab text-muted-foreground/50" />
@@ -531,6 +537,12 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </TabsContent>
 
         <TabsContent value="photos" className="mt-4">
+          {merged.photos.length === 0 && (
+            <Card className="p-8 text-center">
+              <ImageIcon className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No photos yet.</p>
+            </Card>
+          )}
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {merged.photos.map((photo) => (
               <Card key={photo.id} className="group relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden transition-all hover:border-primary/30">
@@ -596,6 +608,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="mb-4">
               <textarea
                 placeholder="Add a note..."
+                aria-label="Add a note"
                 value={noteContent}
                 onChange={(e) => setNoteContent(e.target.value)}
                 rows={3}

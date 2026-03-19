@@ -4,6 +4,8 @@ import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
 import { JobForm } from "@/components/jobs/job-form";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
+import { Card } from "@/components/ui/card";
+import { AlertCircle } from "lucide-react";
 import type { JobCreateInput } from "@/lib/validations/job";
 import { toast } from "sonner";
 
@@ -11,10 +13,14 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
   const { id } = use(params);
   const router = useRouter();
   const [defaultValues, setDefaultValues] = useState<Partial<JobCreateInput> | null>(null);
+  const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/jobs/${id}`)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error("Failed to load job");
+        return r.json();
+      })
       .then((job) => {
         setDefaultValues({
           title: job.title,
@@ -31,7 +37,8 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
           estimatedHours: job.estimatedHours || undefined,
           address: job.address || undefined,
         });
-      });
+      })
+      .catch(() => setFetchError("Failed to load job data. Please go back and try again."));
   }, [id]);
 
   const handleSubmit = async (data: JobCreateInput) => {
@@ -49,6 +56,18 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
     toast.success("Job updated!");
     router.push(`/jobs/${id}`);
   };
+
+  if (fetchError) {
+    return (
+      <div className="mx-auto max-w-xl p-4 md:p-6">
+        <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Jobs", href: "/jobs" }, { label: "Edit" }]} />
+        <Card className="mt-4 border-red-500/30 p-6 text-center">
+          <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
+          <p className="text-sm text-red-400">{fetchError}</p>
+        </Card>
+      </div>
+    );
+  }
 
   if (!defaultValues) {
     return (

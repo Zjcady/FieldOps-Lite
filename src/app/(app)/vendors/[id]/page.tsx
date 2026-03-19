@@ -85,15 +85,6 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
     }
   };
 
-  if (loading || !vendor) {
-    return (
-      <div className="p-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
-      </div>
-    );
-  }
-
   if (error) {
     return (
       <div className="p-4 md:p-6">
@@ -101,6 +92,15 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
           <AlertCircle className="h-5 w-5 shrink-0" />
           <p className="text-sm">{error}</p>
         </Card>
+      </div>
+    );
+  }
+
+  if (loading || !vendor) {
+    return (
+      <div className="p-4">
+        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+        <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
       </div>
     );
   }
@@ -124,6 +124,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
             <select
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
+              aria-label="Vendor category"
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">Select category...</option>

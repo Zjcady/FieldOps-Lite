@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
-import { CalendarDays, AlertCircle, UserPlus } from "lucide-react";
+import { CalendarDays, AlertCircle, UserPlus, Users } from "lucide-react";
 import { SchedulingConflicts } from "@/components/crew/scheduling-conflicts";
 import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 
@@ -78,6 +78,7 @@ function AddMemberButton({ crewId, existingMemberIds, onAdded }: { crewId: strin
       <select
         disabled={adding}
         onChange={(e) => { if (e.target.value) handleSelect(e.target.value); }}
+        aria-label="Select team member to add"
         className="rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
         defaultValue=""
       >
@@ -130,6 +131,19 @@ export default function CrewPage() {
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Today&apos;s Schedule
       </h2>
+
+      {(crews ?? []).length === 0 && (
+        <Card className="mb-6 p-8 text-center">
+          <Users className="mx-auto mb-2 h-8 w-8 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">No crews yet. Create a crew to start dispatching jobs.</p>
+        </Card>
+      )}
+
+      {assignedCrews.length === 0 && (crews ?? []).length > 0 && (
+        <Card className="mb-6 p-6 text-center">
+          <p className="text-sm text-muted-foreground">No crews are assigned to jobs today.</p>
+        </Card>
+      )}
 
       <div className="mb-6 space-y-3">
         {assignedCrews.map((crew) => {

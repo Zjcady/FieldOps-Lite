@@ -32,8 +32,11 @@ export default function TimelinePage() {
   const totalDays = ZOOM_LEVELS[zoomIndex];
 
   const now = new Date();
-  const rangeStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const rangeEnd = new Date(rangeStart.getTime() + totalDays * 86400000);
+  const rangeStart = useMemo(() => new Date(now.getFullYear(), now.getMonth(), 1), [now.getFullYear(), now.getMonth()]);
+  const rangeEnd = useMemo(() => new Date(rangeStart.getTime() + totalDays * 86400000), [rangeStart, totalDays]);
+
+  const rangeStartMs = rangeStart.getTime();
+  const rangeEndMs = rangeEnd.getTime();
 
   // Filter jobs that have both dates and overlap with current range
   const timelineJobs = useMemo(() => {
@@ -41,9 +44,9 @@ export default function TimelinePage() {
       if (!j.scheduledDate || !j.estimatedEnd) return false;
       const start = new Date(j.scheduledDate);
       const end = new Date(j.estimatedEnd);
-      return start < rangeEnd && end > rangeStart;
+      return start.getTime() < rangeEndMs && end.getTime() > rangeStartMs;
     });
-  }, [jobs, rangeStart.getTime(), rangeEnd.getTime()]);
+  }, [jobs, rangeStartMs, rangeEndMs]);
 
   // Group by crew
   const crewRows = useMemo(() => {
@@ -64,7 +67,7 @@ export default function TimelinePage() {
       labels.push({ date: d, label: `${d.getMonth() + 1}/${d.getDate()}` });
     }
     return labels;
-  }, [rangeStart.getTime(), totalDays]);
+  }, [rangeStartMs, totalDays]);
 
   function getBarStyle(job: Job) {
     const start = new Date(job.scheduledDate!);
@@ -92,6 +95,7 @@ export default function TimelinePage() {
             variant="outline"
             disabled={zoomIndex <= 0}
             onClick={() => setZoomIndex((i) => Math.max(0, i - 1))}
+            aria-label="Zoom in (fewer days)"
           >
             <ZoomIn className="h-4 w-4" />
           </Button>
@@ -100,6 +104,7 @@ export default function TimelinePage() {
             variant="outline"
             disabled={zoomIndex >= ZOOM_LEVELS.length - 1}
             onClick={() => setZoomIndex((i) => Math.min(ZOOM_LEVELS.length - 1, i + 1))}
+            aria-label="Zoom out (more days)"
           >
             <ZoomOut className="h-4 w-4" />
           </Button>

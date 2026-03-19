@@ -82,11 +82,11 @@ export default function CrewSchedulePage() {
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-lg font-semibold tracking-tight">Weekly Schedule</h1>
         <div className="flex items-center gap-2">
-          <Button size="icon-sm" variant="outline" onClick={() => setWeekOffset((w) => w - 1)}>
+          <Button size="icon-sm" variant="outline" onClick={() => setWeekOffset((w) => w - 1)} aria-label="Previous week">
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <Button size="sm" variant="outline" onClick={() => setWeekOffset(0)}>Today</Button>
-          <Button size="icon-sm" variant="outline" onClick={() => setWeekOffset((w) => w + 1)}>
+          <Button size="icon-sm" variant="outline" onClick={() => setWeekOffset((w) => w + 1)} aria-label="Next week">
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -115,6 +115,9 @@ export default function CrewSchedulePage() {
             </div>
 
             {/* Crew rows */}
+            {(crews ?? []).length === 0 && (
+              <div className="py-8 text-center text-sm text-muted-foreground">No crews found for this week.</div>
+            )}
             {(crews ?? []).map((crew) => (
               <div key={crew.id} className="mb-1 grid grid-cols-[120px_repeat(7,1fr)] gap-1">
                 <div className="flex items-center gap-2 text-sm font-medium">
@@ -137,6 +140,7 @@ export default function CrewSchedulePage() {
                           onClick={() => setAssigningJob(assigningJob === job.id ? null : job.id)}
                           className="mb-0.5 w-full rounded bg-primary/15 px-1.5 py-0.5 text-left text-[10px] font-medium text-primary transition-colors hover:bg-primary/25"
                           title={`${job.title}\n${job.customer?.name || ""}\n${job.address || ""}`}
+                          aria-label={`${job.title} - click to reassign`}
                         >
                           <div className="truncate">{job.title}</div>
                         </button>

@@ -43,6 +43,8 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const [generatingPortal, setGeneratingPortal] = useState(false);
   const [referralSource, setReferralSource] = useState("");
   const [savingReferral, setSavingReferral] = useState(false);
+  const [replyContent, setReplyContent] = useState("");
+  const [sendingReply, setSendingReply] = useState(false);
 
   const startEdit = () => {
     if (!customer) return;
@@ -136,6 +138,27 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     } finally {
       setSavingReferral(false);
     }
+  };
+
+  const sendReply = async () => {
+    const content = replyContent.trim();
+    if (!content) return;
+    setSendingReply(true);
+    try {
+      const res = await fetch(`/api/customers/${id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content }),
+      });
+      if (res.ok) {
+        setReplyContent("");
+        toast.success("Reply sent!");
+        refetch();
+      } else {
+        toast.error("Failed to send");
+      }
+    } catch { toast.error("Network error"); }
+    finally { setSendingReply(false); }
   };
 
   if (loading || !customer) {
@@ -349,37 +372,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         <div className="mt-3 flex gap-2">
           <Input
             placeholder="Reply to customer..."
-            id="contractor-reply"
-            onKeyDown={async (e) => {
-              if (e.key !== "Enter") return;
-              const input = e.currentTarget;
-              const content = input.value.trim();
-              if (!content) return;
-              input.disabled = true;
-              try {
-                const res = await fetch(`/api/customers/${id}/messages`, {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ content }),
-                });
-                if (res.ok) {
-                  input.value = "";
-                  toast.success("Reply sent!");
-                  refetch();
-                } else {
-                  toast.error("Failed to send");
-                }
-              } catch { toast.error("Network error"); }
-              input.disabled = false;
-            }}
+            aria-label="Reply to customer"
+            value={replyContent}
+            onChange={(e) => setReplyContent(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") sendReply(); }}
+            disabled={sendingReply}
           />
-          <Button size="sm" onClick={() => {
-            const input = document.getElementById("contractor-reply") as HTMLInputElement;
-            if (input) {
-              input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }));
-            }
-          }}>
-            Send
+          <Button size="sm" onClick={sendReply} disabled={sendingReply || !replyContent.trim()}>
+            {sendingReply ? "Sending..." : "Send"}
           </Button>
         </div>
       </Card>
