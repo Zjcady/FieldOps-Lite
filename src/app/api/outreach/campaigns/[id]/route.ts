@@ -1,6 +1,41 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, parseBody } from "@/lib/api-utils";
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
+  const { id } = await params;
+
+  const campaign = await prisma.emailCampaign.findUnique({ where: { id, companyId: user.companyId } });
+  if (!campaign) return apiError("Campaign not found", 404);
+  if (campaign.status !== "draft") return apiError("Cannot edit a sent campaign", 400);
+
+  const [body, parseErr] = await parseBody<{
+    name?: string;
+    subject?: string;
+    body?: string;
+    template?: string;
+  }>(request);
+  if (parseErr) return parseErr;
+
+  const updated = await prisma.emailCampaign.update({
+    where: { id },
+    data: {
+      ...(body.name !== undefined && { name: body.name }),
+      ...(body.subject !== undefined && { subject: body.subject }),
+      ...(body.body !== undefined && { body: body.body }),
+      ...(body.template !== undefined && { template: body.template }),
+    },
+  });
+
+  return NextResponse.json(updated);
+}
 
 export async function POST(
   request: NextRequest,

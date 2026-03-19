@@ -388,6 +388,65 @@ async function main() {
     await prisma.activityLog.create({ data: log });
   }
 
+  // ─── Additional Customers ───
+  const custIds2 = { patel: uuid(), oconnor: uuid() };
+
+  await prisma.customer.createMany({
+    data: [
+      { id: custIds2.patel, companyId, name: "Raj Patel", email: "raj.patel@email.com", phone: "(407) 555-0207", portalToken: "ptl-f4g8u7" },
+      { id: custIds2.oconnor, companyId, name: "Bridget O'Connor", email: "bridget.oc@email.com", phone: "(321) 555-0208", portalToken: "ocn-h9k2v3" },
+    ],
+  });
+
+  // ─── Additional Invoices ───
+  await prisma.invoice.createMany({
+    data: [
+      {
+        companyId, jobId: jobIds.sandersLanai,
+        invoiceNumber: "INV-2026-003", status: "paid",
+        subtotal: 8600, tax: 602, total: 9202,
+        dueDate: d(-5), paidDate: d(-4),
+      },
+      {
+        companyId, jobId: jobIds.martinezPatio,
+        invoiceNumber: "INV-2026-004", status: "sent",
+        subtotal: 12500, tax: 875, total: 13375,
+        dueDate: d(10),
+      },
+    ],
+  });
+
+  // ─── Time Entries ───
+  await prisma.timeEntry.createMany({
+    data: [
+      { companyId, jobId: jobIds.martinezPatio, userId: userIds.marcus, hours: 8, date: d(-3), notes: "Site prep and excavation", billable: true },
+      { companyId, jobId: jobIds.sandersLanai, userId: userIds.james, hours: 6.5, date: d(-7), notes: "Frame assembly assistance", billable: true },
+      { companyId, jobId: jobIds.johnsonGarden, userId: userIds.diana, hours: 4, date: d(-17), notes: "Soil grading and amendments", billable: true },
+    ],
+  });
+
+  // ─── Email Campaign ───
+  const campaignId = uuid();
+  await prisma.emailCampaign.create({
+    data: {
+      id: campaignId,
+      companyId,
+      name: "Spring Maintenance Promo",
+      subject: "Get 15% off spring lawn care — limited time!",
+      body: "Hi {{name}},\n\nSpring is here! Book your seasonal lawn maintenance before April 15 and receive 15% off.\n\nBest,\nBuildRight Construction",
+      template: "promotion",
+      status: "sent",
+      sentAt: d(-5),
+    },
+  });
+
+  await prisma.emailRecipient.createMany({
+    data: [
+      { campaignId, customerId: custIds.martinez, email: "linda.martinez@email.com", status: "delivered", sentAt: d(-5), openedAt: d(-4) },
+      { campaignId, customerId: custIds.sanders, email: "tom.sanders@email.com", status: "delivered", sentAt: d(-5) },
+    ],
+  });
+
   // ─── Portal Messages ───
   await prisma.portalMessage.createMany({
     data: [

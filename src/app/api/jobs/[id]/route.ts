@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, parseBody, safeDate, withRequestId } from "@/lib/api-utils";
 import { jobUpdateSchema } from "@/lib/validations/job";
 
 export async function GET(
@@ -73,6 +73,50 @@ export async function PUT(
       scheduledDate: body.scheduledDate ? safeDate(body.scheduledDate) : undefined,
       estimatedEnd: body.estimatedEnd ? safeDate(body.estimatedEnd) : undefined,
     },
+    include: { customer: true, crew: true },
+  });
+
+  return NextResponse.json(job);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
+
+  const [body, parseErr] = await parseBody<{
+    progress?: number;
+    actualHours?: number;
+    actualCost?: number;
+    status?: string;
+    isArchived?: boolean;
+  }>(request);
+  if (parseErr) return parseErr;
+
+  const { id } = await params;
+
+  const existing = await prisma.job.findUnique({ where: { id, companyId: user.companyId } });
+  if (!existing) return apiError("Job not found", 404);
+
+  if (body.progress !== undefined && (body.progress < 0 || body.progress > 100)) {
+    return apiError("Progress must be between 0 and 100", 400);
+  }
+
+  const data: Record<string, unknown> = {};
+  if (body.progress !== undefined) data.progress = body.progress;
+  if (body.actualHours !== undefined) data.actualHours = body.actualHours;
+  if (body.actualCost !== undefined) data.actualCost = body.actualCost;
+  if (body.status !== undefined) data.status = body.status;
+  if (body.isArchived !== undefined) data.isArchived = body.isArchived;
+
+  const job = await prisma.job.update({
+    where: { id, companyId: user.companyId },
+    data,
     include: { customer: true, crew: true },
   });
 

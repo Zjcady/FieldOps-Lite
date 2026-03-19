@@ -9,6 +9,7 @@ import {
   Users,
   FileText,
   BarChart3,
+  Settings,
   Triangle,
   HardHat,
   LogOut,
@@ -46,6 +47,7 @@ const navItems = [
   { href: "/invoices", icon: Receipt, label: "Invoices" },
   { href: "/outreach", icon: Mail, label: "Outreach" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
+  { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
 export function AppSidebar() {

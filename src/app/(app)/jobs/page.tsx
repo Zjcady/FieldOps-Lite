@@ -17,6 +17,8 @@ interface Job {
   address: string | null;
   progress: number;
   estimatedEnd: string | null;
+  estimatedCost: number | null;
+  actualCost: number | null;
   isRecurring: boolean;
   crew: { name: string; _count?: { members: number } } | null;
   customer: { name: string } | null;
@@ -122,6 +124,11 @@ export default function JobsPage() {
                   {job.category && (
                     <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-400">
                       {job.category}
+                    </span>
+                  )}
+                  {job.actualCost != null && job.estimatedCost != null && job.actualCost > job.estimatedCost && (
+                    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-400">
+                      Over Budget
                     </span>
                   )}
                   {job.isRecurring && (

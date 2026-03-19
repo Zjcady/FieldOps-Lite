@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useCallback, use } from "react";
+import { useState, useCallback, use } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,11 +11,13 @@ import { formatDate, formatDateTime, formatCurrency } from "@/lib/format";
 import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 import {
   ArrowLeft, MapPin, Users, Calendar, CheckCircle2, Circle,
-  Clock, Image as ImageIcon, FileText, Pencil, AlertCircle, Loader2,
+  Clock, Image as ImageIcon, FileText, Pencil, AlertCircle, Loader2, Package, Archive, Trash2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TaskAddForm } from "@/components/jobs/task-add-form";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 
 interface Task { id: string; title: string; status: string; completedAt: string | null }
 interface Photo { id: string; url: string; caption: string | null; category: string; createdAt: string }
@@ -33,6 +35,7 @@ interface JobDetail {
   notes: { id: string; content: string; type: string; createdAt: string; user: { name: string } | null }[];
   permits: { id: string; permitNumber: string | null; type: string; status: string }[];
   inspections: { id: string; type: string; status: string; scheduledDate: string | null; inspector: string | null }[];
+  materials: { id: string; name: string; quantity: number; unit: string; unitCost: number | null; totalCost: number | null; status: string; vendor: { name: string } | null }[];
   activityLogs: ActivityLog[];
 }
 
@@ -41,6 +44,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const { data: job, loading, error } = useFetch<JobDetail>(`/api/jobs/${id}`);
   const [localJob, setLocalJob] = useState<Partial<JobDetail>>({});
   const [changingStatus, setChangingStatus] = useState<string | null>(null); // #23: loading state
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [noteContent, setNoteContent] = useState("");
+  const [submittingNote, setSubmittingNote] = useState(false);
+  const [timeHours, setTimeHours] = useState("");
+  const [timeDate, setTimeDate] = useState(new Date().toISOString().slice(0, 10));
+  const [timeNotes, setTimeNotes] = useState("");
+  const [submittingTime, setSubmittingTime] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [archiving, setArchiving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const router = useRouter();
 
   const merged = job ? { ...job, ...localJob } as JobDetail : null;
 
@@ -85,33 +99,81 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     }
   }, [id, job?.tasks]);
 
-  // #40: memoize timeline
-  const timelineItems = useMemo(() => {
-    if (!merged) return [];
-    return merged.activityLogs.map((log) => {
-      let parsed: Record<string, string> = {};
-      try { parsed = JSON.parse(log.details || "{}"); } catch { /* empty */ }
-      const title =
-        log.action === "status_change"
-          ? `Status: ${STATUS_META[parsed.from]?.label || parsed.from} → ${STATUS_META[parsed.to]?.label || parsed.to}`
-          : log.action === "task_completed" ? `Task completed: ${parsed.task}`
-          : log.action === "photo_uploaded" ? `Photo uploaded: ${parsed.caption}`
-          : log.action === "inspection_passed" ? `Inspection passed: ${parsed.type}`
-          : log.action === "inspection_failed" ? `Inspection failed: ${parsed.type}`
-          : log.action;
-      return {
-        id: log.id, title,
-        subtitle: `${log.user?.name || "System"} · ${formatDateTime(log.createdAt)}`,
-        dotColor: log.action.includes("fail") ? "bg-red-400" : log.action.includes("pass") || log.action.includes("complete") ? "bg-green-400" : "bg-blue-400",
-      };
+  const handleAddNote = useCallback(async () => {
+    if (!noteContent.trim()) return;
+    setSubmittingNote(true);
+    const { data, error: err } = await safeMutate(`/api/jobs/${id}/notes`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ content: noteContent.trim(), type: "general" }),
     });
-  }, [merged?.activityLogs]); // eslint-disable-line react-hooks/exhaustive-deps
+    setSubmittingNote(false);
+    if (err) { toast.error(err); return; }
+    if (data) {
+      setLocalJob((prev) => ({
+        ...prev,
+        notes: [...(prev.notes ?? job?.notes ?? []), data as JobDetail["notes"][number]],
+      }));
+      setNoteContent("");
+      toast.success("Note added");
+    }
+  }, [id, noteContent, job?.notes]);
+
+  const handleLogTime = useCallback(async () => {
+    const h = parseFloat(timeHours);
+    if (!h || h <= 0) { toast.error("Enter valid hours"); return; }
+    setSubmittingTime(true);
+    const { error: err } = await safeMutate(`/api/jobs/${id}/time-entries`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ hours: h, date: timeDate, notes: timeNotes }),
+    });
+    setSubmittingTime(false);
+    if (err) { toast.error(err); return; }
+    setTimeHours("");
+    setTimeNotes("");
+    toast.success("Time logged");
+  }, [id, timeHours, timeDate, timeNotes]);
+
+  // Timeline items derived from activity logs
+  const timelineItems = (merged?.activityLogs ?? []).map((log) => {
+    let parsed: Record<string, string> = {};
+    try { parsed = JSON.parse(log.details || "{}"); } catch { /* empty */ }
+    const title =
+      log.action === "status_change"
+        ? `Status: ${STATUS_META[parsed.from]?.label || parsed.from} → ${STATUS_META[parsed.to]?.label || parsed.to}`
+        : log.action === "task_completed" ? `Task completed: ${parsed.task}`
+        : log.action === "photo_uploaded" ? `Photo uploaded: ${parsed.caption}`
+        : log.action === "inspection_passed" ? `Inspection passed: ${parsed.type}`
+        : log.action === "inspection_failed" ? `Inspection failed: ${parsed.type}`
+        : log.action;
+    return {
+      id: log.id, title,
+      subtitle: `${log.user?.name || "System"} · ${formatDateTime(log.createdAt)}`,
+      dotColor: log.action.includes("fail") ? "bg-red-400" : log.action.includes("pass") || log.action.includes("complete") ? "bg-green-400" : "bg-blue-400",
+    };
+  });
 
   if (loading || (!job && !error)) {
     return (
-      <div className="p-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-muted" />
-        <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
+      <div className="p-4 md:p-6">
+        {/* Title bar skeleton */}
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <div className="h-6 w-56 animate-pulse rounded bg-muted" />
+            <div className="mt-1.5 h-4 w-24 animate-pulse rounded bg-muted" />
+          </div>
+          <div className="h-8 w-20 animate-pulse rounded bg-muted" />
+        </div>
+        {/* Metric cards skeleton 2x2 */}
+        <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-[72px] animate-pulse rounded-xl bg-card border border-border" />
+          ))}
+        </div>
+        {/* Tabs skeleton */}
+        <div className="h-10 w-full animate-pulse rounded-lg bg-muted" />
+        <div className="mt-4 h-64 animate-pulse rounded-xl bg-card border border-border" />
       </div>
     );
   }
@@ -149,6 +211,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/jobs/${id}/edit`} />}>
             <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={archiving}
+            onClick={async () => {
+              setArchiving(true);
+              const { error: err } = await safeMutate(`/api/jobs/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ isArchived: true }),
+              });
+              setArchiving(false);
+              if (err) { toast.error(err); return; }
+              toast.success("Job archived");
+              router.push("/jobs");
+            }}
+          >
+            {archiving ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Archive className="mr-1 h-3.5 w-3.5" />}
+            Archive
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            disabled={deleting}
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="mr-1 h-3.5 w-3.5" /> Delete
           </Button>
           <StatusBadge status={merged.status} />
         </div>
@@ -194,7 +284,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               key={t} size="sm"
               variant={t === "active" || t === "completed" ? "default" : "outline"}
               disabled={changingStatus !== null}
-              onClick={() => handleStatusChange(t)}
+              onClick={() => t === "cancelled" ? setShowCancelConfirm(true) : handleStatusChange(t)}
             >
               {changingStatus === t && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
               {STATUS_META[t]?.label || t}
@@ -203,11 +293,41 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </div>
       )}
 
+      <ConfirmDialog
+        open={showCancelConfirm}
+        title="Cancel Job"
+        message="Are you sure you want to cancel this job? This action may not be easily reversed."
+        confirmLabel="Yes, Cancel Job"
+        variant="destructive"
+        onConfirm={async () => { setShowCancelConfirm(false); await handleStatusChange("cancelled"); }}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
+      <ConfirmDialog
+        open={showDeleteConfirm}
+        title="Delete Job"
+        message="Are you sure you want to permanently delete this job? This action cannot be undone."
+        confirmLabel="Yes, Delete"
+        variant="destructive"
+        onConfirm={async () => {
+          setDeleting(true);
+          const { error: err } = await safeMutate(`/api/jobs/${id}`, {
+            method: "DELETE",
+          });
+          setDeleting(false);
+          setShowDeleteConfirm(false);
+          if (err) { toast.error(err); return; }
+          toast.success("Job deleted");
+          router.push("/jobs");
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
+
       <Tabs defaultValue="overview" className="w-full">
         <TabsList className="w-full justify-start">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks ({completedTasks}/{tasks.length})</TabsTrigger>
           <TabsTrigger value="photos">Photos ({merged.photos.length})</TabsTrigger>
+          <TabsTrigger value="materials">Materials ({merged.materials?.length || 0})</TabsTrigger>
           <TabsTrigger value="notes">Notes ({merged.notes.length})</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
@@ -226,6 +346,39 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {merged.crew && (<div className="flex items-center gap-2 text-muted-foreground"><Users className="h-4 w-4" />{merged.crew.name} · {merged.crew.members.length} members</div>)}
               {merged.scheduledDate && (<div className="flex items-center gap-2 text-muted-foreground"><Calendar className="h-4 w-4" />Scheduled: {formatDate(merged.scheduledDate)}</div>)}
               {merged.estimatedHours != null && (<div className="flex items-center gap-2 text-muted-foreground"><Clock className="h-4 w-4" />{merged.actualHours ?? 0}/{merged.estimatedHours} hours</div>)}
+            </div>
+          </Card>
+          <Card className="p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Log Time</h3>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="number"
+                  step="0.5"
+                  min="0"
+                  placeholder="Hours"
+                  value={timeHours}
+                  onChange={(e) => setTimeHours(e.target.value)}
+                  className="w-24 rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                />
+                <input
+                  type="date"
+                  value={timeDate}
+                  onChange={(e) => setTimeDate(e.target.value)}
+                  className="rounded-md border border-border bg-background px-3 py-1.5 text-sm"
+                />
+              </div>
+              <textarea
+                placeholder="Notes (optional)"
+                value={timeNotes}
+                onChange={(e) => setTimeNotes(e.target.value)}
+                rows={2}
+                className="w-full rounded-md border border-border bg-background px-3 py-1.5 text-sm resize-none"
+              />
+              <Button size="sm" onClick={handleLogTime} disabled={submittingTime}>
+                {submittingTime && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+                Log
+              </Button>
             </div>
           </Card>
           {merged.customer && (
@@ -306,8 +459,56 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </div>
         </TabsContent>
 
+        <TabsContent value="materials" className="mt-4">
+          <Card className="p-4">
+            {merged.materials && merged.materials.length > 0 ? (
+              <div className="space-y-2">
+                {merged.materials.map((mat) => (
+                  <div key={mat.id} className="flex items-center justify-between rounded-lg border border-border p-3">
+                    <div className="flex items-center gap-3">
+                      <Package className="h-4 w-4 text-muted-foreground" />
+                      <div>
+                        <div className="text-sm font-medium">{mat.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {mat.quantity} {mat.unit}
+                          {mat.vendor && <> &middot; {mat.vendor.name}</>}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      {mat.unitCost != null && (
+                        <div className="text-xs text-muted-foreground">{formatCurrency(mat.unitCost)}/{mat.unit}</div>
+                      )}
+                      {mat.totalCost != null && (
+                        <div className="text-sm font-medium">{formatCurrency(mat.totalCost)}</div>
+                      )}
+                      <StatusBadge status={mat.status} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No materials recorded.</p>
+            )}
+          </Card>
+        </TabsContent>
+
         <TabsContent value="notes" className="mt-4">
           <Card className="p-4">
+            {/* #9: Notes add form */}
+            <div className="mb-4">
+              <textarea
+                placeholder="Add a note..."
+                value={noteContent}
+                onChange={(e) => setNoteContent(e.target.value)}
+                rows={3}
+                className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none"
+              />
+              <Button size="sm" className="mt-2" onClick={handleAddNote} disabled={submittingNote || !noteContent.trim()}>
+                {submittingNote && <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />}
+                Add Note
+              </Button>
+            </div>
             {merged.notes.length > 0 ? (
               <div className="space-y-3">
                 {merged.notes.map((note) => (

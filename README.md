@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FieldOps
 
-## Getting Started
+Field service management platform for construction and landscaping companies.
 
-First, run the development server:
+## Tech Stack
+
+- **Framework:** Next.js 16 (App Router)
+- **Database:** PostgreSQL via Supabase
+- **ORM:** Prisma
+- **Styling:** Tailwind CSS
+- **Auth:** Supabase Auth
+- **Language:** TypeScript
+
+## Prerequisites
+
+- Node.js 20+
+- npm
+- PostgreSQL database (via Supabase)
+
+## Setup
 
 ```bash
+# Clone the repository
+git clone <repo-url>
+cd FieldOps
+
+# Install dependencies
+npm install
+
+# Copy environment variables
+cp .env.example .env
+# Then fill in your Supabase and database credentials in .env
+
+# Push the database schema
+npx prisma db push
+
+# Seed the database with sample data
+npx prisma db seed
+
+# Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The app will be available at [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Available Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Build for production |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+| `npm run type-check` | Run TypeScript type checking |
+| `npm run db:push` | Push Prisma schema to database |
+| `npm run db:seed` | Seed the database |
+| `npm run db:reset` | Reset database and re-seed |
+| `npm run db:studio` | Open Prisma Studio |
 
-## Learn More
+## Deployment
 
-To learn more about Next.js, take a look at the following resources:
+### Vercel + Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Create a Supabase project at [supabase.com](https://supabase.com)
+2. Deploy to Vercel and connect your repository
+3. Set the following environment variables in Vercel:
+   - `DATABASE_URL` — Supabase pooled connection string
+   - `DIRECT_URL` — Supabase direct connection string
+   - `NEXT_PUBLIC_SUPABASE_URL` — Supabase project URL
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase anonymous key
+4. Run `prisma db push` against your production database
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Project Structure
 
-## Deploy on Vercel
+```
+src/
+  app/            — Next.js App Router pages and layouts
+  components/     — Reusable UI components
+  lib/            — Shared utilities, config, and database client
+prisma/
+  schema.prisma   — Database schema
+  seed.ts         — Database seed script
+public/           — Static assets
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Configuration
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app name and branding are configurable via `src/lib/app-config.ts`.

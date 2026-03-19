@@ -18,6 +18,18 @@ export async function GET(request: NextRequest) {
   if (crewId) where.crewId = crewId;
   if (search) where.title = { contains: search, mode: "insensitive" };
 
+  // Sorting support
+  const sortBy = searchParams.get("sortBy") || "created";
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const orderByMap: Record<string, any> = {
+    date: { scheduledDate: "asc" },
+    status: { status: "asc" },
+    customer: { customer: { name: "asc" } },
+    cost: { estimatedCost: "desc" },
+    created: { createdAt: "desc" },
+  };
+  const orderBy = orderByMap[sortBy] || orderByMap.created;
+
   const jobs = await prisma.job.findMany({
     where,
     select: {
@@ -26,7 +38,7 @@ export async function GET(request: NextRequest) {
       customer: { select: { name: true } },
       crew: { select: { name: true, _count: { select: { members: true } } } },
     },
-    orderBy: { scheduledDate: "asc" },
+    orderBy,
     skip,
     take,
   });

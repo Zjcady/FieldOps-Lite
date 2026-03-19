@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireAdmin } from "@/lib/api-utils";
 
 export async function GET(
   request: NextRequest,
@@ -66,4 +66,39 @@ export async function PUT(
   });
 
   return NextResponse.json(updated);
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+
+  const adminErr = requireAdmin(user);
+  if (adminErr) return adminErr;
+
+  const { id } = await params;
+
+  const customer = await prisma.customer.findUnique({
+    where: { id, companyId: user.companyId },
+    include: {
+      jobs: {
+        where: {
+          status: { notIn: ["completed", "cancelled", "invoiced"] },
+        },
+        select: { id: true },
+      },
+    },
+  });
+
+  if (!customer) return apiError("Customer not found", 404);
+
+  if (customer.jobs.length > 0) {
+    return apiError("Cannot delete customer with active jobs", 400);
+  }
+
+  await prisma.customer.delete({ where: { id, companyId: user.companyId } });
+
+  return NextResponse.json({ success: true });
 }
