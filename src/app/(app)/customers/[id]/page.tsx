@@ -6,9 +6,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { AlertCircle, ArrowLeft, Mail, Phone, MapPin, Pencil, X, Check } from "lucide-react";
+import { AlertCircle, Mail, Phone, MapPin, Pencil, X, Check, DollarSign } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
+import { formatCurrency } from "@/lib/format";
+import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 
 interface CustomerDetail {
   id: string;
@@ -17,7 +19,7 @@ interface CustomerDetail {
   phone: string | null;
   address: string | null;
   properties: { id: string; address: string; city: string; state: string }[];
-  jobs: { id: string; title: string; status: string; jobNumber: string }[];
+  jobs: { id: string; title: string; status: string; jobNumber: string; estimatedCost: number | null }[];
 }
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -93,10 +95,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="p-4 md:p-6">
-      <Link href="/customers" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" />
-        Back to Customers
-      </Link>
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Customers", href: "/customers" }, { label: customer.name }]} />
 
       {editing ? (
         <Card className="mb-4 p-4 space-y-3">
@@ -130,6 +129,37 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           </div>
         </>
       )}
+
+      {/* Lifetime Value */}
+      {(() => {
+        const completedJobs = customer.jobs.filter((j) => j.status === "completed");
+        const totalRevenue = completedJobs.reduce((sum, j) => sum + (Number(j.estimatedCost) || 0), 0);
+        const totalJobs = completedJobs.length;
+        const avgJobValue = totalJobs > 0 ? totalRevenue / totalJobs : 0;
+
+        return (
+          <Card className="mb-6 p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <DollarSign className="h-4 w-4 text-green-400" />
+              <h3 className="text-sm font-semibold">Lifetime Value</h3>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="text-lg font-bold text-green-400">{formatCurrency(totalRevenue)}</div>
+                <div className="text-[10px] text-muted-foreground">Total Revenue</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-blue-400">{totalJobs}</div>
+                <div className="text-[10px] text-muted-foreground">Completed Jobs</div>
+              </div>
+              <div className="text-center">
+                <div className="text-lg font-bold text-amber-400">{formatCurrency(avgJobValue)}</div>
+                <div className="text-[10px] text-muted-foreground">Avg Job Value</div>
+              </div>
+            </div>
+          </Card>
+        );
+      })()}
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Jobs ({customer.jobs.length})

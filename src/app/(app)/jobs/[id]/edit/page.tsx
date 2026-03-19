@@ -2,9 +2,8 @@
 
 import { useEffect, useState, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import { JobForm } from "@/components/jobs/job-form";
+import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 import type { JobCreateInput } from "@/lib/validations/job";
 import { toast } from "sonner";
 
@@ -62,13 +61,7 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="mx-auto max-w-xl p-4 md:p-6">
-      <Link
-        href={`/jobs/${id}`}
-        className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Back to Job
-      </Link>
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Jobs", href: "/jobs" }, { label: "Job", href: `/jobs/${id}` }, { label: "Edit" }]} />
 
       <h1 className="mb-4 text-lg font-semibold tracking-tight">Edit Job</h1>
 

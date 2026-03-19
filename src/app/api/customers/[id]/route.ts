@@ -16,7 +16,7 @@ export async function GET(
     include: {
       properties: true,
       jobs: {
-        select: { id: true, title: true, status: true, jobNumber: true },
+        select: { id: true, title: true, status: true, jobNumber: true, estimatedCost: true },
         orderBy: { createdAt: "desc" },
       },
     },
@@ -59,7 +59,7 @@ export async function PUT(
     include: {
       properties: true,
       jobs: {
-        select: { id: true, title: true, status: true, jobNumber: true },
+        select: { id: true, title: true, status: true, jobNumber: true, estimatedCost: true },
         orderBy: { createdAt: "desc" },
       },
     },

@@ -5,13 +5,23 @@ import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
-import { AlertCircle, FileSpreadsheet, TrendingUp, Link2, Package } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, TrendingUp, Link2, Package, Timer } from "lucide-react";
 
 interface RevenueData {
   revenueByCategory: { name: string; value: number }[];
   totalPaid: number;
   totalOutstanding: number;
   totalRevenue: number;
+}
+
+interface VelocityCategory {
+  name: string;
+  avgDays: number;
+  count: number;
+}
+
+interface VelocityData {
+  categories: VelocityCategory[];
 }
 
 const BAR_COLORS: Record<string, string> = {
@@ -28,6 +38,7 @@ const currentMonth = new Date().toLocaleDateString("en-US", { month: "long" });
 
 export default function ReportsPage() {
   const { data, loading, error } = useFetch<RevenueData>("/api/reports/revenue");
+  const { data: velocityData } = useFetch<VelocityData>("/api/reports/velocity");
 
   if (loading || !data) {
     return (
@@ -82,6 +93,40 @@ export default function ReportsPage() {
           ))}
         </div>
       </Card>
+
+      {/* Completion Velocity */}
+      {velocityData && velocityData.categories.length > 0 && (() => {
+        const maxDays = Math.max(...velocityData.categories.map((c) => c.avgDays), 1);
+        return (
+          <Card className="mb-6 p-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Timer className="h-4 w-4 text-purple-400" />
+              <h3 className="text-sm font-semibold">Completion Velocity</h3>
+            </div>
+            <div className="space-y-3">
+              {velocityData.categories.map((cat) => {
+                const widthPct = (cat.avgDays / maxDays) * 100;
+                return (
+                  <div key={cat.name}>
+                    <div className="mb-1 flex justify-between text-sm">
+                      <span>{cat.name}</span>
+                      <span className="font-semibold text-purple-400">
+                        {cat.avgDays}d avg <span className="text-muted-foreground font-normal">({cat.count} jobs)</span>
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-border">
+                      <div
+                        className="h-full rounded-full bg-purple-500"
+                        style={{ width: `${widthPct}%` }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        );
+      })()}
 
       <div className="mb-6 grid grid-cols-2 gap-3">
         <MetricCard

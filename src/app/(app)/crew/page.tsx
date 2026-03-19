@@ -120,6 +120,36 @@ export default function CrewPage() {
         })}
       </div>
 
+      {/* TODO: Replace placeholder utilization data with real API call to /api/crews/[id]/utilization */}
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Monthly Utilization
+      </h2>
+      <div className="mb-6 space-y-3">
+        {(crews ?? []).map((crew) => {
+          // TODO: Fetch real utilization data from /api/crews/${crew.id}/utilization
+          // Use crew index as deterministic seed for placeholder data
+          const placeholderHours = ((crew.name.charCodeAt(0) * 7 + 42) % 140) + 20;
+          const maxHours = 160;
+          const pct = (placeholderHours / maxHours) * 100;
+          const barColor = pct > 75 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
+
+          return (
+            <Card key={`util-${crew.id}`} className="p-3">
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-sm font-medium">{crew.name}</span>
+                <span className="text-xs text-muted-foreground">{placeholderHours}h / {maxHours}h</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-border">
+                <div
+                  className={`h-full rounded-full ${barColor}`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+
       {unassignedCrews.length > 0 && (
         <>
           <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

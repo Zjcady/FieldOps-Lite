@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { jobCreateSchema, type JobCreateInput } from "@/lib/validations/job";
@@ -8,7 +8,7 @@ import { JOB_CATEGORIES, JOB_PRIORITIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
+import { Loader2, RotateCcw, X } from "lucide-react";
 
 interface Customer {
   id: string;
@@ -27,18 +27,23 @@ interface JobFormProps {
   submitLabel?: string;
 }
 
+const DRAFT_KEY = "fieldops-job-draft";
+
 export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }: JobFormProps) {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [crews, setCrews] = useState<Crew[]>([]);
   const [submitting, setSubmitting] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const draftRef = useRef<Partial<JobCreateInput> | null>(null);
 
   const {
     register,
     handleSubmit,
     watch,
+    reset,
     formState: { errors },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<JobCreateInput>({
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(jobCreateSchema) as any,
     defaultValues: {
       type: "project",
@@ -49,6 +54,46 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
 
   const selectedCustomerId = watch("customerId");
   const selectedCustomer = customers.find((c) => c.id === selectedCustomerId);
+
+  // #29: Check for saved draft on mount (only for new jobs, not edits)
+  useEffect(() => {
+    if (defaultValues && Object.keys(defaultValues).length > 2) return; // editing existing job
+    try {
+      const saved = localStorage.getItem(DRAFT_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        draftRef.current = parsed;
+        setShowDraftBanner(true);
+      }
+    } catch { /* ignore */ }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const restoreDraft = useCallback(() => {
+    if (draftRef.current) {
+      reset({ type: "project", priority: "medium", ...draftRef.current });
+    }
+    setShowDraftBanner(false);
+  }, [reset]);
+
+  const dismissDraft = useCallback(() => {
+    localStorage.removeItem(DRAFT_KEY);
+    draftRef.current = null;
+    setShowDraftBanner(false);
+  }, []);
+
+  // #29: Debounced auto-save to localStorage
+  useEffect(() => {
+    if (defaultValues && Object.keys(defaultValues).length > 2) return; // skip for edit mode
+    const subscription = watch((values) => {
+      const timer = setTimeout(() => {
+        try {
+          localStorage.setItem(DRAFT_KEY, JSON.stringify(values));
+        } catch { /* ignore */ }
+      }, 1000);
+      return () => clearTimeout(timer);
+    });
+    return () => subscription.unsubscribe();
+  }, [watch, defaultValues]);
 
   useEffect(() => {
     Promise.all([
@@ -64,6 +109,8 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
     setSubmitting(true);
     try {
       await onSubmit(data);
+      // #29: Clear draft on successful submit
+      localStorage.removeItem(DRAFT_KEY);
     } finally {
       setSubmitting(false);
     }
@@ -71,6 +118,19 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
 
   return (
     <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-4">
+      {showDraftBanner && (
+        <Card className="flex items-center justify-between border-blue-500/30 bg-blue-500/5 p-3">
+          <span className="text-sm text-blue-400">You have an unsaved draft. Resume where you left off?</span>
+          <div className="flex gap-2">
+            <Button type="button" size="sm" variant="outline" onClick={restoreDraft}>
+              <RotateCcw className="mr-1 h-3.5 w-3.5" /> Restore
+            </Button>
+            <Button type="button" size="sm" variant="ghost" onClick={dismissDraft}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        </Card>
+      )}
       <fieldset disabled={submitting}>
       <Card className="p-4 space-y-3">
         <h3 className="text-xs font-semibold uppercase text-muted-foreground">Job Details</h3>

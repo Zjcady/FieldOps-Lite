@@ -7,17 +7,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Timeline } from "@/components/shared/timeline";
 import { getValidTransitions, STATUS_META } from "@/lib/job-state-machine";
-import { formatDate, formatDateTime, formatCurrency } from "@/lib/format";
+import { formatDate, formatDateTime, formatCurrency, formatRelative } from "@/lib/format";
 import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 import {
-  ArrowLeft, MapPin, Users, Calendar, CheckCircle2, Circle,
+  MapPin, Users, Calendar, CheckCircle2, Circle,
   Clock, Image as ImageIcon, FileText, Pencil, AlertCircle, Loader2, Package, Archive, Trash2,
+  Copy, Printer, CalendarDays, X,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TaskAddForm } from "@/components/jobs/task-add-form";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { Breadcrumbs } from "@/components/shared/breadcrumbs";
 
 interface Task { id: string; title: string; status: string; completedAt: string | null }
 interface Photo { id: string; url: string; caption: string | null; category: string; createdAt: string }
@@ -25,7 +27,7 @@ interface ActivityLog { id: string; action: string; details: string | null; crea
 interface JobDetail {
   id: string; jobNumber: string; title: string; description: string | null;
   status: string; category: string | null; type: string; priority: string;
-  progress: number; address: string | null;
+  progress: number; address: string | null; isRecurring: boolean;
   scheduledDate: string | null; startDate: string | null; completedDate: string | null;
   estimatedEnd: string | null; estimatedCost: number | null; actualCost: number | null;
   estimatedHours: number | null; actualHours: number | null;
@@ -54,6 +56,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const router = useRouter();
 
   const merged = job ? { ...job, ...localJob } as JobDetail : null;
@@ -149,7 +152,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         : log.action;
     return {
       id: log.id, title,
-      subtitle: `${log.user?.name || "System"} · ${formatDateTime(log.createdAt)}`,
+      subtitle: `${log.user?.name || "System"} · ${formatRelative(log.createdAt)}`,
       dotColor: log.action.includes("fail") ? "bg-red-400" : log.action.includes("pass") || log.action.includes("complete") ? "bg-green-400" : "bg-blue-400",
     };
   });
@@ -182,9 +185,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   if (error || !merged) {
     return (
       <div className="p-4">
-        <Link href="/jobs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to Jobs
-        </Link>
+        <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Jobs", href: "/jobs" }, { label: "..." }]} />
         <Card className="mt-4 border-red-500/30 p-6 text-center">
           <AlertCircle className="mx-auto mb-2 h-8 w-8 text-red-400" />
           <p className="text-sm text-red-400">{error || "Job not found"}</p>
@@ -199,9 +200,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
   return (
     <div className="p-4 md:p-6">
-      <Link href="/jobs" className="mb-4 inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back to Jobs
-      </Link>
+      <Breadcrumbs items={[{ label: "Dashboard", href: "/" }, { label: "Jobs", href: "/jobs" }, { label: merged?.title || "..." }]} />
 
       <div className="mb-4 flex items-start justify-between gap-3">
         <div>
@@ -211,6 +210,30 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" nativeButton={false} render={<Link href={`/jobs/${id}/edit`} />}>
             <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={duplicating}
+            onClick={async () => {
+              setDuplicating(true);
+              const res = await fetch(`/api/jobs/${id}/clone`, { method: "POST" });
+              setDuplicating(false);
+              if (!res.ok) { toast.error("Failed to duplicate job"); return; }
+              const cloned = await res.json();
+              toast.success("Job duplicated");
+              router.push(`/jobs/${cloned.id}`);
+            }}
+          >
+            {duplicating ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <Copy className="mr-1 h-3.5 w-3.5" />}
+            Duplicate
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => window.print()}
+          >
+            <Printer className="mr-1 h-3.5 w-3.5" /> Print
           </Button>
           <Button
             size="sm"
@@ -348,6 +371,40 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               {merged.estimatedHours != null && (<div className="flex items-center gap-2 text-muted-foreground"><Clock className="h-4 w-4" />{merged.actualHours ?? 0}/{merged.estimatedHours} hours</div>)}
             </div>
           </Card>
+
+          {/* Cost Breakdown */}
+          <Card className="p-4">
+            <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Cost Breakdown</h3>
+            {(() => {
+              const laborCost = (merged.actualHours ?? 0) * 45;
+              const materialsCost = (merged.materials ?? []).reduce((sum, m) => sum + (m.totalCost ?? 0), 0);
+              const totalActual = laborCost + materialsCost;
+              return (
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between"><span className="text-muted-foreground">Labor ({merged.actualHours ?? 0} hrs x $45/hr)</span><span>{formatCurrency(laborCost)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Materials</span><span>{formatCurrency(materialsCost)}</span></div>
+                  <div className="border-t border-border pt-2 flex justify-between font-medium"><span>Total Actual</span><span>{formatCurrency(totalActual)}</span></div>
+                  {merged.estimatedCost != null && (
+                    <div className="flex justify-between text-muted-foreground"><span>Estimated</span><span>{formatCurrency(merged.estimatedCost)}</span></div>
+                  )}
+                </div>
+              );
+            })()}
+          </Card>
+
+          {/* Recurring Job Indicator */}
+          {merged.isRecurring && (
+            <Card className="p-4">
+              <div className="flex items-center gap-3">
+                <CalendarDays className="h-5 w-5 text-blue-400" />
+                <div>
+                  <h3 className="text-sm font-semibold">Recurring Job</h3>
+                  <p className="text-xs text-muted-foreground">This is a recurring job.</p>
+                </div>
+              </div>
+            </Card>
+          )}
+
           <Card className="p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Log Time</h3>
             <div className="space-y-2">
@@ -413,21 +470,37 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <div className="space-y-1">
               {/* #34: aria-label on task buttons */}
               {tasks.map((task) => (
-                <button
-                  key={task.id}
-                  onClick={() => handleTaskToggle(task.id, task.status)}
-                  aria-label={`${task.title}: ${task.status === "completed" ? "completed" : "pending"}`}
-                  className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted"
-                >
-                  {task.status === "completed" ? (
-                    <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-400" />
-                  ) : task.status === "in_progress" ? (
-                    <Clock className="h-5 w-5 flex-shrink-0 text-blue-400" />
-                  ) : (
-                    <Circle className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
-                  )}
-                  <span className={task.status === "completed" ? "text-sm text-muted-foreground line-through" : "text-sm"}>{task.title}</span>
-                </button>
+                <div key={task.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => handleTaskToggle(task.id, task.status)}
+                    aria-label={`${task.title}: ${task.status === "completed" ? "completed" : "pending"}`}
+                    className="flex flex-1 items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-muted"
+                  >
+                    {task.status === "completed" ? (
+                      <CheckCircle2 className="h-5 w-5 flex-shrink-0 text-green-400" />
+                    ) : task.status === "in_progress" ? (
+                      <Clock className="h-5 w-5 flex-shrink-0 text-blue-400" />
+                    ) : (
+                      <Circle className="h-5 w-5 flex-shrink-0 text-muted-foreground" />
+                    )}
+                    <span className={task.status === "completed" ? "text-sm text-muted-foreground line-through" : "text-sm"}>{task.title}</span>
+                  </button>
+                  <button
+                    aria-label={`Delete task: ${task.title}`}
+                    className="rounded p-1 text-muted-foreground hover:bg-red-500/15 hover:text-red-400 transition-colors"
+                    onClick={async () => {
+                      const { error: err } = await safeMutate(`/api/jobs/${id}/tasks/${task.id}`, { method: "DELETE" });
+                      if (err) { toast.error("Failed to delete task"); return; }
+                      setLocalJob((prev) => ({
+                        ...prev,
+                        tasks: (prev.tasks ?? merged.tasks).filter((t) => t.id !== task.id),
+                      }));
+                      toast.success("Task deleted");
+                    }}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               ))}
             </div>
           </Card>
@@ -537,6 +610,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Print styles */}
+      <style jsx global>{`
+        @media print {
+          nav, header, aside, [data-sidebar], [data-bottom-nav], .print\\:hidden {
+            display: none !important;
+          }
+          button {
+            display: none !important;
+          }
+          body {
+            background: white !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

@@ -13,10 +13,19 @@ export async function GET(request: NextRequest) {
   const search = getSafeSearch(request);
   const { skip, take } = getPagination(request);
 
+  const from = searchParams.get("from");
+  const to = searchParams.get("to");
+
   const where: Record<string, unknown> = { companyId: user.companyId };
   if (status && status !== "all") where.status = status;
   if (crewId) where.crewId = crewId;
   if (search) where.title = { contains: search, mode: "insensitive" };
+  if (from || to) {
+    const scheduledDateFilter: Record<string, Date> = {};
+    if (from) scheduledDateFilter.gte = new Date(from);
+    if (to) scheduledDateFilter.lte = new Date(to + "T23:59:59.999Z");
+    where.scheduledDate = scheduledDateFilter;
+  }
 
   // Sorting support
   const sortBy = searchParams.get("sortBy") || "created";

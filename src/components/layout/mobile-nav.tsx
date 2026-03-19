@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, FileText, MoreHorizontal, X, UserCircle, DollarSign, Mail, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, FileText, MoreHorizontal, X, UserCircle, DollarSign, Mail, BarChart3, Truck } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
@@ -15,6 +15,7 @@ const mainNav = [
 
 const moreNav = [
   { href: "/customers", icon: UserCircle, label: "Customers" },
+  { href: "/vendors", icon: Truck, label: "Vendors" },
   { href: "/finance", icon: DollarSign, label: "Finance" },
   { href: "/outreach", icon: Mail, label: "Outreach" },
   { href: "/reports", icon: BarChart3, label: "Reports" },

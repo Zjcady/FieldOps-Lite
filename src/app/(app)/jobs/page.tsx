@@ -36,13 +36,29 @@ export default function JobsPage() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
   }, [search]);
+
+  // #26: Cmd+K / Ctrl+K to focus search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        document.getElementById("job-search")?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
   const params = filter !== "all" ? `?status=${filter}` : "";
   const searchParam = debouncedSearch ? `${params ? "&" : "?"}search=${encodeURIComponent(debouncedSearch)}` : "";
-  const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}${searchParam}`);
+  const fromParam = fromDate ? `${(params || searchParam) ? "&" : "?"}from=${fromDate}` : "";
+  const toParam = toDate ? `${(params || searchParam || fromParam) ? "&" : "?"}to=${toDate}` : "";
+  const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}${searchParam}${fromParam}${toParam}`);
 
   return (
     <div className="p-4 md:p-6">
@@ -59,13 +75,34 @@ export default function JobsPage() {
         </Button>
       </div>
 
-      <div className="mb-3">
+      <div className="mb-3 space-y-2">
         <input
-          placeholder="Search jobs..."
+          id="job-search"
+          placeholder="Search jobs... (Ctrl+K)"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
         />
+        <div className="flex gap-2">
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs text-muted-foreground whitespace-nowrap">Start Date</label>
+            <input
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <label className="text-xs text-muted-foreground whitespace-nowrap">End Date</label>
+            <input
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+            />
+          </div>
+        </div>
       </div>
 
       {/* #33: aria-pressed on filter buttons */}
@@ -106,7 +143,7 @@ export default function JobsPage() {
         <div className="space-y-3">
           {(jobs ?? []).map((job) => (
             <Link key={job.id} href={`/jobs/${job.id}`}>
-              <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]">
+              <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]" title={`${job.title}\n${job.address || ""}\n${job.customer?.name || ""}`}>
                 <div className="mb-1.5 flex items-start justify-between gap-2">
                   <div>
                     <h3 className="text-sm font-semibold leading-tight">{job.title}</h3>

@@ -17,6 +17,7 @@ import {
   DollarSign,
   Mail,
   Receipt,
+  Truck,
 } from "lucide-react";
 import { APP_CONFIG } from "@/lib/app-config";
 import { useUser } from "@/lib/auth/user-context";
@@ -42,6 +43,7 @@ const navItems = [
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/crew", icon: Users, label: "Crew & Dispatch" },
   { href: "/customers", icon: UserCircle, label: "Customers" },
+  { href: "/vendors", icon: Truck, label: "Vendors" },
   { href: "/permits", icon: FileText, label: "Permits" },
   { href: "/finance", icon: DollarSign, label: "Finance" },
   { href: "/invoices", icon: Receipt, label: "Invoices" },

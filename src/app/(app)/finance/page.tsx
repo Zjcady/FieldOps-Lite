@@ -4,7 +4,7 @@ import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
-import { AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Clock, FileSpreadsheet, Receipt } from "lucide-react";
+import { AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Clock, FileSpreadsheet, Receipt, BarChart3 } from "lucide-react";
 import Link from "next/link";
 
 interface FinanceData {
@@ -17,8 +17,21 @@ interface FinanceData {
   hours: { total: number; billable: number; utilization: number };
 }
 
+interface TrendMonth {
+  month: string;
+  revenue: number;
+  cost: number;
+}
+
+interface TrendData {
+  months: TrendMonth[];
+}
+
+const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 export default function FinancePage() {
   const { data, loading, error } = useFetch<FinanceData>("/api/finance/summary");
+  const { data: trendData } = useFetch<TrendData>("/api/finance/trends");
 
   if (loading || !data) {
     return (
@@ -67,6 +80,45 @@ export default function FinancePage() {
         <MetricCard value={formatCurrency(data.revenue.totalOutstanding)} label="Outstanding" valueColor="text-amber-400" borderColor="border-l-amber-400" />
         <MetricCard value={`${avgMargin.toFixed(1)}%`} label="Avg Margin" valueColor={avgMargin >= 20 ? "text-green-400" : "text-red-400"} borderColor={avgMargin >= 20 ? "border-l-green-400" : "border-l-red-400"} />
       </div>
+
+      {/* Revenue Trend */}
+      {trendData && trendData.months.length > 0 && (() => {
+        const maxRevenue = Math.max(...trendData.months.map((m) => m.revenue), 1);
+        return (
+          <>
+            <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Revenue Trend
+            </h2>
+            <Card className="mb-6 p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="h-4 w-4 text-blue-400" />
+                <h3 className="text-sm font-semibold">Last 6 Months</h3>
+              </div>
+              <div className="flex items-end gap-2" style={{ height: 160 }}>
+                {trendData.months.map((m) => {
+                  const [, mo] = m.month.split("-");
+                  const label = MONTH_NAMES[parseInt(mo, 10) - 1];
+                  const heightPct = (m.revenue / maxRevenue) * 100;
+                  return (
+                    <div key={m.month} className="flex flex-1 flex-col items-center gap-1">
+                      <span className="text-[10px] font-medium text-muted-foreground">
+                        {formatCurrency(m.revenue)}
+                      </span>
+                      <div className="w-full flex-1 flex items-end">
+                        <div
+                          className="w-full rounded-t bg-blue-500"
+                          style={{ height: `${Math.max(heightPct, 2)}%` }}
+                        />
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">{label}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </Card>
+          </>
+        );
+      })()}
 
       {/* Bottlenecks */}
       {data.bottlenecks.length > 0 && (
