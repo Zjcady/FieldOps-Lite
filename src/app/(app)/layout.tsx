@@ -4,6 +4,8 @@ import { Header } from "@/components/layout/header";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { UserProvider } from "@/lib/auth/user-context";
 import { FocusReset } from "@/components/shared/focus-reset";
+import { CameraFab } from "@/components/shared/camera-fab";
+import { OfflineIndicator } from "@/components/shared/offline-indicator";
 import { getUser } from "@/lib/auth/get-user";
 
 export default async function AppLayout({
@@ -22,11 +24,13 @@ export default async function AppLayout({
       >
         Skip to content
       </a>
+      <OfflineIndicator />
       <SidebarProvider defaultOpen>
         <AppSidebar />
         <div className="flex min-h-screen flex-1 flex-col">
           <Header />
           <main id="main-content" className="flex-1 pb-20 md:pb-0">{children}</main>
+          <CameraFab />
           <MobileNav />
         </div>
       </SidebarProvider>

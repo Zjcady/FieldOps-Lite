@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { JobForm } from "@/components/jobs/job-form";
@@ -9,6 +9,18 @@ import { toast } from "sonner";
 
 export default function NewJobPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  // Build defaultValues from template query params
+  const templateDefaults: Partial<JobCreateInput> = {};
+  const title = searchParams.get("title");
+  const category = searchParams.get("category");
+  const estimatedHours = searchParams.get("estimatedHours");
+  const estimatedCost = searchParams.get("estimatedCost");
+  if (title) templateDefaults.title = title;
+  if (category) templateDefaults.category = category;
+  if (estimatedHours) templateDefaults.estimatedHours = parseFloat(estimatedHours);
+  if (estimatedCost) templateDefaults.estimatedCost = parseFloat(estimatedCost);
 
   const handleSubmit = async (data: JobCreateInput) => {
     const res = await fetch("/api/jobs", {
@@ -40,7 +52,7 @@ export default function NewJobPage() {
 
       <h1 className="mb-4 text-lg font-semibold tracking-tight">New Job</h1>
 
-      <JobForm onSubmit={handleSubmit} />
+      <JobForm onSubmit={handleSubmit} defaultValues={templateDefaults} />
     </div>
   );
 }

@@ -18,6 +18,8 @@ import {
   Mail,
   Receipt,
   Truck,
+  CalendarDays,
+  Activity,
 } from "lucide-react";
 import { APP_CONFIG } from "@/lib/app-config";
 import { useUser } from "@/lib/auth/user-context";
@@ -41,6 +43,7 @@ import { useRouter } from "next/navigation";
 const navItems = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
+  { href: "/calendar", icon: CalendarDays, label: "Calendar" },
   { href: "/crew", icon: Users, label: "Crew & Dispatch" },
   { href: "/customers", icon: UserCircle, label: "Customers" },
   { href: "/vendors", icon: Truck, label: "Vendors" },
@@ -48,6 +51,7 @@ const navItems = [
   { href: "/finance", icon: DollarSign, label: "Finance" },
   { href: "/invoices", icon: Receipt, label: "Invoices" },
   { href: "/outreach", icon: Mail, label: "Outreach" },
+  { href: "/activity", icon: Activity, label: "Activity" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];

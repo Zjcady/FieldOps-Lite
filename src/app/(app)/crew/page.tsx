@@ -1,13 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
-import { CalendarDays, AlertCircle } from "lucide-react";
-import { useFetch } from "@/lib/hooks/use-fetch";
+import { CalendarDays, AlertCircle, UserPlus } from "lucide-react";
+import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 
 interface CrewMember {
   id: string;
@@ -32,12 +33,67 @@ interface Crew {
   jobs: CrewJob[];
 }
 
+interface TeamUser {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
+}
+
 function getInitials(name: string) {
   return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 }
 
+function AddMemberButton({ crewId, existingMemberIds, onAdded }: { crewId: string; existingMemberIds: string[]; onAdded: () => void }) {
+  const [open, setOpen] = useState(false);
+  const { data: teamMembers } = useFetch<TeamUser[]>(open ? "/api/team" : null);
+  const [adding, setAdding] = useState(false);
+
+  const available = (teamMembers ?? []).filter((t) => !existingMemberIds.includes(t.id));
+
+  async function handleSelect(userId: string) {
+    setAdding(true);
+    await safeMutate(`/api/crews/${crewId}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    setAdding(false);
+    setOpen(false);
+    onAdded();
+  }
+
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" onClick={() => setOpen(true)} className="mt-2">
+        <UserPlus className="mr-1.5 h-3.5 w-3.5" />
+        Add Member
+      </Button>
+    );
+  }
+
+  return (
+    <div className="mt-2">
+      <select
+        disabled={adding}
+        onChange={(e) => { if (e.target.value) handleSelect(e.target.value); }}
+        className="rounded-md border border-border bg-background px-3 py-1.5 text-sm outline-none focus:ring-2 focus:ring-ring"
+        defaultValue=""
+      >
+        <option value="" disabled>Select team member...</option>
+        {available.map((t) => (
+          <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+        ))}
+      </select>
+      <Button size="sm" variant="ghost" onClick={() => setOpen(false)} className="ml-2">
+        Cancel
+      </Button>
+    </div>
+  );
+}
+
 export default function CrewPage() {
-  const { data: crews, loading, error } = useFetch<Crew[]>("/api/crews");
+  const { data: crews, loading, error, refetch } = useFetch<Crew[]>("/api/crews");
 
   const assignedCrews = (crews ?? []).filter((c) => c.jobs.length > 0);
   const unassignedCrews = (crews ?? []).filter((c) => c.jobs.length === 0);
@@ -115,6 +171,12 @@ export default function CrewPage() {
                   +{crew.jobs.length - 1} more job{crew.jobs.length > 2 ? "s" : ""}
                 </div>
               )}
+
+              <AddMemberButton
+                crewId={crew.id}
+                existingMemberIds={crew.members.map((m) => m.user.id)}
+                onAdded={refetch}
+              />
             </Card>
           );
         })}
@@ -176,6 +238,11 @@ export default function CrewPage() {
                       Assign
                     </Button>
                   </div>
+                  <AddMemberButton
+                    crewId={crew.id}
+                    existingMemberIds={crew.members.map((m) => m.user.id)}
+                    onAdded={refetch}
+                  />
                 </Card>
               );
             })}

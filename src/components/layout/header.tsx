@@ -8,6 +8,7 @@ import { Triangle, Search, Bell, AlertTriangle, CheckCircle2, X } from "lucide-r
 import Link from "next/link";
 import { APP_CONFIG } from "@/lib/app-config";
 import { useUser } from "@/lib/auth/user-context";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 interface Alert {
   id: string;
@@ -94,6 +95,8 @@ export function Header() {
           <Search className="h-3.5 w-3.5" />
           <span>Search…</span>
         </Link>
+
+        <ThemeToggle />
 
         {/* Notification bell - now functional */}
         <div className="relative" ref={panelRef}>

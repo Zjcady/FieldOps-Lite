@@ -3,17 +3,18 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Briefcase, Users, FileText, MoreHorizontal, X, UserCircle, DollarSign, Mail, BarChart3, Truck } from "lucide-react";
+import { LayoutDashboard, Briefcase, Users, FileText, MoreHorizontal, X, UserCircle, DollarSign, Mail, BarChart3, Truck, CalendarDays } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const mainNav = [
   { href: "/", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/crew", icon: Users, label: "Crew" },
-  { href: "/permits", icon: FileText, label: "Permits" },
+  { href: "/calendar", icon: CalendarDays, label: "Calendar" },
 ];
 
 const moreNav = [
+  { href: "/permits", icon: FileText, label: "Permits" },
   { href: "/customers", icon: UserCircle, label: "Customers" },
   { href: "/vendors", icon: Truck, label: "Vendors" },
   { href: "/finance", icon: DollarSign, label: "Finance" },

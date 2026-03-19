@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { useFetch } from "@/lib/hooks/use-fetch";
+import { Button } from "@/components/ui/button";
+import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { formatCurrency, formatDate } from "@/lib/format";
-import { AlertCircle, Receipt } from "lucide-react";
+import { AlertCircle, Receipt, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 interface Invoice {
   id: string;
@@ -17,7 +20,24 @@ interface Invoice {
 }
 
 export default function InvoicesPage() {
-  const { data: invoices, loading, error } = useFetch<Invoice[]>("/api/invoices");
+  const { data: invoices, loading, error, refetch } = useFetch<Invoice[]>("/api/invoices");
+  const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+
+  async function handleMarkPaid(id: string) {
+    setMarkingPaid(id);
+    const { error: err } = await safeMutate(`/api/invoices/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ status: "paid", paidDate: new Date().toISOString() }),
+    });
+    setMarkingPaid(null);
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    toast.success("Invoice marked as paid");
+    refetch();
+  }
 
   if (error) return (<div className="p-4"><Card className="border-red-500/30 p-4"><div className="flex items-center gap-2 text-sm text-red-400"><AlertCircle className="h-4 w-4" />{error}</div></Card></div>);
 
@@ -49,6 +69,26 @@ export default function InvoicesPage() {
                 <div className="text-right">
                   <div className="text-sm font-bold">{formatCurrency(inv.total)}</div>
                   <StatusBadge status={inv.status} />
+                  <a
+                    href={`/api/invoices/${inv.id}/pdf`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="h-3 w-3" />
+                    View
+                  </a>
+                  {inv.status === "sent" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="mt-2"
+                      disabled={markingPaid === inv.id}
+                      onClick={() => handleMarkPaid(inv.id)}
+                    >
+                      {markingPaid === inv.id ? "Marking..." : "Mark Paid"}
+                    </Button>
+                  )}
                 </div>
               </div>
             </Card>

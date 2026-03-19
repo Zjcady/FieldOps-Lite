@@ -4,8 +4,9 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2 } from "lucide-react";
+import { Loader2, Bell, FileText } from "lucide-react";
 import { toast } from "sonner";
+import Link from "next/link";
 
 interface CompanyInfo {
   name: string;
@@ -150,6 +151,26 @@ export default function SettingsPage() {
             {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Save Changes
           </Button>
+        </Card>
+
+        <Card className="p-4 space-y-3">
+          <h2 className="text-sm font-semibold">Quick Links</h2>
+          <div className="space-y-2">
+            <Link
+              href="/settings/notifications"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            >
+              <Bell className="h-4 w-4 text-muted-foreground" />
+              Notification Preferences
+            </Link>
+            <Link
+              href="/docs"
+              className="flex items-center gap-2 rounded-lg px-2 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+            >
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              API Documentation
+            </Link>
+          </div>
         </Card>
 
         <Card className="border-red-500/30 p-4 space-y-3">

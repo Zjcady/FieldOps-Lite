@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { MapPin, Users, Plus, AlertCircle } from "lucide-react";
+import { MapPin, Users, Plus, AlertCircle, FileUp, LayoutTemplate } from "lucide-react";
 import Link from "next/link";
 import { useFetch } from "@/lib/hooks/use-fetch";
 
@@ -69,10 +69,20 @@ export default function JobsPage() {
             {jobs?.length ?? 0} jobs
           </p>
         </div>
-        <Button size="sm" nativeButton={false} render={<Link href="/jobs/new" />}>
-          <Plus className="mr-1 h-4 w-4" />
-          New Job
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/jobs/templates" />}>
+            <LayoutTemplate className="mr-1 h-4 w-4" />
+            Templates
+          </Button>
+          <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/jobs/import" />}>
+            <FileUp className="mr-1 h-4 w-4" />
+            Import CSV
+          </Button>
+          <Button size="sm" nativeButton={false} render={<Link href="/jobs/new" />}>
+            <Plus className="mr-1 h-4 w-4" />
+            New Job
+          </Button>
+        </div>
       </div>
 
       <div className="mb-3 space-y-2">

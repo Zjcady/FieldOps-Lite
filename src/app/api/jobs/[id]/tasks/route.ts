@@ -74,5 +74,18 @@ export async function PATCH(request: NextRequest) {
     },
   });
 
+  // Auto-progress: recalculate job progress based on completed tasks
+  const allTasks = await prisma.task.findMany({
+    where: { jobId: task.jobId },
+    select: { status: true },
+  });
+  const total = allTasks.length;
+  const completed = allTasks.filter((t) => t.status === "completed").length;
+  const progress = total > 0 ? Math.round((completed / total) * 100) : 0;
+  await prisma.job.update({
+    where: { id: task.jobId },
+    data: { progress },
+  });
+
   return NextResponse.json(updated);
 }
