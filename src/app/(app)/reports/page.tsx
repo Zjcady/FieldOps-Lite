@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatDate } from "@/lib/format";
 import Link from "next/link";
 import { AlertCircle, FileSpreadsheet, TrendingUp, Link2, Package, Timer } from "lucide-react";
 
@@ -24,6 +25,13 @@ interface VelocityData {
   categories: VelocityCategory[];
 }
 
+interface CustomerWithPortal {
+  id: string;
+  name: string;
+  portalToken: string | null;
+  jobs: { id: string; title: string; progress: number; estimatedEnd: string | null; _count?: { photos: number } }[];
+}
+
 const BAR_COLORS: Record<string, string> = {
   Hardscape: "bg-blue-500",
   Maintenance: "bg-green-500",
@@ -39,6 +47,8 @@ const currentMonth = new Date().toLocaleDateString("en-US", { month: "long" });
 export default function ReportsPage() {
   const { data, loading, error } = useFetch<RevenueData>("/api/reports/revenue");
   const { data: velocityData } = useFetch<VelocityData>("/api/reports/velocity");
+  const { data: customers } = useFetch<CustomerWithPortal[]>("/api/customers");
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
 
   if (loading || !data) {
     return (
@@ -61,6 +71,13 @@ export default function ReportsPage() {
   }
 
   const maxVal = Math.max(...data.revenueByCategory.map((d) => d.value), 1);
+
+  // Find customers with portal tokens for the portal preview
+  const portalCustomers = (customers ?? []).filter((c) => c.portalToken);
+  const selectedCustomer = selectedCustomerId
+    ? portalCustomers.find((c) => c.id === selectedCustomerId)
+    : portalCustomers[0];
+  const selectedJob = selectedCustomer?.jobs?.[0];
 
   return (
     <div className="p-4 md:p-6">
@@ -150,8 +167,8 @@ export default function ReportsPage() {
         {[
           { icon: FileSpreadsheet, title: "QuickBooks Export", sub: "CSV ready", href: "/api/export?type=jobs&format=csv", color: "bg-green-500/15 text-green-400" },
           { icon: TrendingUp, title: "Power BI Export", sub: "Analytics tables", href: "/api/export?type=jobs&format=json", color: "bg-blue-500/15 text-blue-400" },
-          { icon: Link2, title: "Customer Portal", sub: "Share project link", href: "/portal/mrt-x7f2k9", color: "bg-purple-500/15 text-purple-400" },
-          { icon: Package, title: "Material Orders", sub: "Compare vendors", color: "bg-amber-500/15 text-amber-400" },
+          { icon: Link2, title: "Customer Portal", sub: "Share project link", href: selectedCustomer?.portalToken ? `/portal/${selectedCustomer.portalToken}` : "/customers", color: "bg-purple-500/15 text-purple-400" },
+          { icon: Package, title: "Material Orders", sub: "Compare vendors", href: "/materials/compare", color: "bg-amber-500/15 text-amber-400" },
         ].map((action) => {
           const IconComp = action.icon;
           const content = (
@@ -174,27 +191,66 @@ export default function ReportsPage() {
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Customer Portal Preview
       </h2>
-      <Link href="/portal/mrt-x7f2k9">
-        <Card className="cursor-pointer border-primary/20 bg-gradient-to-br from-blue-500/10 to-purple-500/5 p-5 text-center transition-colors hover:border-primary/40">
-          <div className="mb-1 text-xs text-muted-foreground">Shareable project link</div>
-          <div className="font-mono text-sm text-muted-foreground">fieldopslite.com/p/mrt-x7f2k9</div>
-          <div className="mt-3 flex justify-center gap-6">
-            <div className="text-center">
-              <div className="text-xl font-bold text-blue-400">65%</div>
-              <div className="text-[10px] text-muted-foreground">Complete</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-green-400">12</div>
-              <div className="text-[10px] text-muted-foreground">Photos</div>
-            </div>
-            <div className="text-center">
-              <div className="text-xl font-bold text-amber-400">Mar 15</div>
-              <div className="text-[10px] text-muted-foreground">Est. Done</div>
-            </div>
+
+      {portalCustomers.length > 0 ? (
+        <>
+          {/* Customer selector */}
+          {portalCustomers.length > 1 && (
+            <select
+              value={selectedCustomerId || selectedCustomer?.id || ""}
+              onChange={(e) => setSelectedCustomerId(e.target.value)}
+              className="mb-3 flex h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
+            >
+              {portalCustomers.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          )}
+
+          {selectedCustomer && (
+            <Link href={`/portal/${selectedCustomer.portalToken}`}>
+              <Card className="cursor-pointer border-primary/20 bg-gradient-to-br from-blue-500/10 to-purple-500/5 p-5 text-center transition-colors hover:border-primary/40">
+                <div className="mb-1 text-xs text-muted-foreground">
+                  {selectedCustomer.name} — Shareable project link
+                </div>
+                <div className="font-mono text-sm text-muted-foreground">
+                  /portal/{selectedCustomer.portalToken}
+                </div>
+                {selectedJob ? (
+                  <div className="mt-3 flex justify-center gap-6">
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-blue-400">{selectedJob.progress}%</div>
+                      <div className="text-[10px] text-muted-foreground">Complete</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xl font-bold text-green-400">{selectedJob.title.split(" ").slice(0, 2).join(" ")}</div>
+                      <div className="text-[10px] text-muted-foreground">Active Job</div>
+                    </div>
+                    {selectedJob.estimatedEnd && (
+                      <div className="text-center">
+                        <div className="text-xl font-bold text-amber-400">{formatDate(selectedJob.estimatedEnd).replace(/, \d{4}$/, "")}</div>
+                        <div className="text-[10px] text-muted-foreground">Est. Done</div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="mt-3 text-xs text-muted-foreground">No active jobs</div>
+                )}
+                <div className="mt-3 text-xs text-primary">Tap to preview portal →</div>
+              </Card>
+            </Link>
+          )}
+        </>
+      ) : (
+        <Card className="p-5 text-center">
+          <div className="text-sm text-muted-foreground">
+            No customers have portal tokens yet. Generate one from a customer&apos;s detail page.
           </div>
-          <div className="mt-3 text-xs text-primary">Tap to preview portal →</div>
+          <Link href="/customers" className="mt-2 inline-block text-xs text-primary">
+            Go to Customers →
+          </Link>
         </Card>
-      </Link>
+      )}
     </div>
   );
 }

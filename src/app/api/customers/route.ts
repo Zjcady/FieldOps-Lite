@@ -13,6 +13,11 @@ export async function GET(request: NextRequest) {
     where: { companyId: user.companyId },
     include: {
       properties: true,
+      jobs: {
+        select: { id: true, title: true, status: true, progress: true, estimatedEnd: true },
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      },
       _count: { select: { jobs: true } },
     },
     orderBy: { name: "asc" },
