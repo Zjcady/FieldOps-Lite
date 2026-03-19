@@ -6,11 +6,18 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { AlertCircle, Mail, Phone, MapPin, Pencil, X, Check, DollarSign } from "lucide-react";
+import { AlertCircle, Mail, Phone, MapPin, Pencil, X, Check, DollarSign, Share2, Link2, Star, MessageSquare, Users } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, formatRelative } from "@/lib/format";
 import { Breadcrumbs } from "@/components/shared/breadcrumbs";
+
+interface PortalMessage {
+  id: string;
+  senderType: string;
+  content: string;
+  createdAt: string;
+}
 
 interface CustomerDetail {
   id: string;
@@ -18,8 +25,10 @@ interface CustomerDetail {
   email: string | null;
   phone: string | null;
   address: string | null;
+  portalToken: string | null;
   properties: { id: string; address: string; city: string; state: string }[];
   jobs: { id: string; title: string; status: string; jobNumber: string; estimatedCost: number | null }[];
+  messages: PortalMessage[];
 }
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,6 +40,9 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editAddress, setEditAddress] = useState("");
+  const [generatingPortal, setGeneratingPortal] = useState(false);
+  const [referralSource, setReferralSource] = useState("");
+  const [savingReferral, setSavingReferral] = useState(false);
 
   const startEdit = () => {
     if (!customer) return;
@@ -73,6 +85,59 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     }
   };
 
+  const handleSharePortal = async () => {
+    if (!customer) return;
+    if (customer.portalToken) {
+      const link = `${window.location.origin}/portal/${customer.portalToken}`;
+      await navigator.clipboard.writeText(link);
+      toast.success("Portal link copied!");
+    } else {
+      setGeneratingPortal(true);
+      try {
+        const res = await fetch(`/api/customers/${id}/portal-token`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          const link = `${window.location.origin}/portal/${data.portalToken}`;
+          await navigator.clipboard.writeText(link);
+          toast.success("Portal link copied!");
+          refetch();
+        } else {
+          toast.error("Failed to generate portal link");
+        }
+      } catch {
+        toast.error("Network error");
+      } finally {
+        setGeneratingPortal(false);
+      }
+    }
+  };
+
+  const handleSaveReferral = async () => {
+    if (!referralSource.trim()) return;
+    setSavingReferral(true);
+    try {
+      // Store referral info as a portal message note
+      const token = customer?.portalToken;
+      if (token) {
+        await fetch(`/api/portal/${token}/messages`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            senderType: "system",
+            content: `Referral source: ${referralSource.trim()}`,
+          }),
+        });
+      }
+      toast.success("Referral source saved!");
+      setReferralSource("");
+      refetch();
+    } catch {
+      toast.error("Failed to save referral");
+    } finally {
+      setSavingReferral(false);
+    }
+  };
+
   if (loading || !customer) {
     return (
       <div className="p-4">
@@ -92,6 +157,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
       </div>
     );
   }
+
+  // Satisfaction calculations
+  const totalJobs = customer.jobs.length;
+  const completedJobs = customer.jobs.filter((j) => j.status === "completed");
+  const completionPct = totalJobs > 0 ? (completedJobs.length / totalJobs) * 100 : 0;
+  const totalRevenue = completedJobs.reduce((sum, j) => sum + (Number(j.estimatedCost) || 0), 0);
+  const avgJobValue = completedJobs.length > 0 ? totalRevenue / completedJobs.length : 0;
+  const satisfactionEmoji = completionPct > 80 ? "\u{1F60A}" : completionPct >= 50 ? "\u{1F610}" : "\u{1F61E}";
 
   return (
     <div className="p-4 md:p-6">
@@ -121,6 +194,14 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
             <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
+            {/* Feature 23: Quick email button */}
+            {customer.email && (
+              <a href={`mailto:${customer.email}?subject=FieldOps Update`}>
+                <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Send Email">
+                  <Mail className="h-3.5 w-3.5" />
+                </Button>
+              </a>
+            )}
           </div>
           <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
             {customer.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {customer.email}</span>}
@@ -130,36 +211,65 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         </>
       )}
 
-      {/* Lifetime Value */}
-      {(() => {
-        const completedJobs = customer.jobs.filter((j) => j.status === "completed");
-        const totalRevenue = completedJobs.reduce((sum, j) => sum + (Number(j.estimatedCost) || 0), 0);
-        const totalJobs = completedJobs.length;
-        const avgJobValue = totalJobs > 0 ? totalRevenue / totalJobs : 0;
+      {/* Feature 17: Portal share button */}
+      <div className="mb-4">
+        <Button size="sm" variant="outline" onClick={handleSharePortal} disabled={generatingPortal}>
+          {customer.portalToken ? (
+            <>
+              <Share2 className="mr-1 h-3.5 w-3.5" /> Share Portal Link
+            </>
+          ) : (
+            <>
+              <Link2 className="mr-1 h-3.5 w-3.5" /> {generatingPortal ? "Generating..." : "Generate Portal Link"}
+            </>
+          )}
+        </Button>
+      </div>
 
-        return (
-          <Card className="mb-6 p-4">
-            <div className="flex items-center gap-2 mb-3">
-              <DollarSign className="h-4 w-4 text-green-400" />
-              <h3 className="text-sm font-semibold">Lifetime Value</h3>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center">
-                <div className="text-lg font-bold text-green-400">{formatCurrency(totalRevenue)}</div>
-                <div className="text-[10px] text-muted-foreground">Total Revenue</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-blue-400">{totalJobs}</div>
-                <div className="text-[10px] text-muted-foreground">Completed Jobs</div>
-              </div>
-              <div className="text-center">
-                <div className="text-lg font-bold text-amber-400">{formatCurrency(avgJobValue)}</div>
-                <div className="text-[10px] text-muted-foreground">Avg Job Value</div>
-              </div>
-            </div>
-          </Card>
-        );
-      })()}
+      {/* Lifetime Value */}
+      <Card className="mb-6 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <DollarSign className="h-4 w-4 text-green-400" />
+          <h3 className="text-sm font-semibold">Lifetime Value</h3>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          <div className="text-center">
+            <div className="text-lg font-bold text-green-400">{formatCurrency(totalRevenue)}</div>
+            <div className="text-[10px] text-muted-foreground">Total Revenue</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-blue-400">{completedJobs.length}</div>
+            <div className="text-[10px] text-muted-foreground">Completed Jobs</div>
+          </div>
+          <div className="text-center">
+            <div className="text-lg font-bold text-amber-400">{formatCurrency(avgJobValue)}</div>
+            <div className="text-[10px] text-muted-foreground">Avg Job Value</div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Feature 20: Referral tracking */}
+      <Card className="mb-6 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <Users className="h-4 w-4 text-purple-400" />
+          <h3 className="text-sm font-semibold">Referrals</h3>
+        </div>
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>Referred by: <span className="text-foreground">(none)</span></p>
+          <p>Has referred: <span className="text-foreground">(none)</span></p>
+        </div>
+        <div className="mt-3 flex gap-2">
+          <Input
+            placeholder="Enter referral source (customer name)"
+            value={referralSource}
+            onChange={(e) => setReferralSource(e.target.value)}
+            className="h-8 text-sm"
+          />
+          <Button size="sm" onClick={handleSaveReferral} disabled={savingReferral || !referralSource.trim()}>
+            Save
+          </Button>
+        </div>
+      </Card>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Jobs ({customer.jobs.length})
@@ -183,6 +293,59 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
           ))
         )}
       </div>
+
+      {/* Feature 21: Satisfaction indicator */}
+      {totalJobs > 0 && (
+        <Card className="mb-6 p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Star className="h-4 w-4 text-yellow-400" />
+            <h3 className="text-sm font-semibold">Satisfaction</h3>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center">
+              <div className="text-lg font-bold">{completionPct.toFixed(0)}%</div>
+              <div className="text-[10px] text-muted-foreground">Completion Rate</div>
+            </div>
+            <div className="text-center">
+              <div className="text-lg font-bold">{formatCurrency(avgJobValue)}</div>
+              <div className="text-[10px] text-muted-foreground">Avg Job Margin</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl">{satisfactionEmoji}</div>
+              <div className="text-[10px] text-muted-foreground">Indicator</div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Feature 22: Customer communication log */}
+      <Card className="mb-6 p-4">
+        <div className="flex items-center gap-2 mb-3">
+          <MessageSquare className="h-4 w-4 text-blue-400" />
+          <h3 className="text-sm font-semibold">Recent Communications</h3>
+        </div>
+        {(!customer.messages || customer.messages.length === 0) ? (
+          <p className="text-sm text-muted-foreground">No messages yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {customer.messages.map((msg) => (
+              <div key={msg.id} className="flex items-start gap-2 text-sm">
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                  msg.senderType === "customer" ? "bg-blue-500/15 text-blue-400" : "bg-secondary text-muted-foreground"
+                }`}>
+                  {msg.senderType}
+                </span>
+                <span className="flex-1 text-muted-foreground truncate">
+                  {msg.content.length > 100 ? msg.content.substring(0, 100) + "..." : msg.content}
+                </span>
+                <span className="shrink-0 text-[11px] text-muted-foreground">
+                  {formatRelative(msg.createdAt)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
 
       {customer.properties.length > 0 && (
         <>

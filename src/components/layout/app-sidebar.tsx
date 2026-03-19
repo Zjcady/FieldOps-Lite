@@ -18,6 +18,7 @@ import {
   Mail,
   Receipt,
   Truck,
+  Package,
   CalendarDays,
   Activity,
 } from "lucide-react";
@@ -47,6 +48,7 @@ const navItems = [
   { href: "/crew", icon: Users, label: "Crew & Dispatch" },
   { href: "/customers", icon: UserCircle, label: "Customers" },
   { href: "/vendors", icon: Truck, label: "Vendors" },
+  { href: "/materials", icon: Package, label: "Materials" },
   { href: "/permits", icon: FileText, label: "Permits" },
   { href: "/finance", icon: DollarSign, label: "Finance" },
   { href: "/invoices", icon: Receipt, label: "Invoices" },
@@ -90,7 +92,7 @@ export function AppSidebar() {
   };
 
   return (
-    <Sidebar className="border-r border-border">
+    <Sidebar id="app-sidebar" className="border-r border-border">
       <SidebarHeader className="p-4">
         <Link href="/" className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 shadow-md shadow-primary/25">

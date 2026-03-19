@@ -1,12 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { MapPin, Users, Plus, AlertCircle, FileUp, LayoutTemplate } from "lucide-react";
+import { STATUS_META } from "@/lib/job-state-machine";
+import { MapPin, Users, Plus, AlertCircle, FileUp, LayoutTemplate, GanttChart } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useFetch } from "@/lib/hooks/use-fetch";
+import { toast } from "sonner";
+
+const ALL_STATUSES = ["scheduled", "active", "paused", "waiting_permit", "waiting_inspection", "waiting_materials", "completed", "cancelled"];
 
 interface Job {
   id: string;
@@ -38,6 +43,11 @@ export default function JobsPage() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const [localStatuses, setLocalStatuses] = useState<Record<string, string>>({});
+  const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const router = useRouter();
+
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(search), 300);
     return () => clearTimeout(timer);
@@ -54,11 +64,72 @@ export default function JobsPage() {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
+
   const params = filter !== "all" ? `?status=${filter}` : "";
   const searchParam = debouncedSearch ? `${params ? "&" : "?"}search=${encodeURIComponent(debouncedSearch)}` : "";
   const fromParam = fromDate ? `${(params || searchParam) ? "&" : "?"}from=${fromDate}` : "";
   const toParam = toDate ? `${(params || searchParam || fromParam) ? "&" : "?"}to=${toDate}` : "";
   const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}${searchParam}${fromParam}${toParam}`);
+
+  const jobList = jobs ?? [];
+
+  // #27: Quick status update handler
+  const handleQuickStatus = useCallback(async (jobId: string, newStatus: string) => {
+    setLocalStatuses((prev) => ({ ...prev, [jobId]: newStatus }));
+    try {
+      const res = await fetch(`/api/jobs/${jobId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to update status");
+      }
+      toast.success(`Status updated to ${STATUS_META[newStatus]?.label || newStatus}`);
+    } catch {
+      // Rollback
+      setLocalStatuses((prev) => {
+        const next = { ...prev };
+        delete next[jobId];
+        return next;
+      });
+      toast.error("Failed to update status");
+    }
+  }, []);
+
+  // #28: Keyboard navigation on job list
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      // Don't interfere when typing in inputs
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.min(i + 1, jobList.length - 1));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((i) => Math.max(i - 1, 0));
+      } else if (e.key === "Enter" && selectedIndex >= 0 && selectedIndex < jobList.length) {
+        e.preventDefault();
+        router.push(`/jobs/${jobList[selectedIndex].id}`);
+      }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [jobList, selectedIndex, router]);
+
+  // Scroll selected card into view
+  useEffect(() => {
+    if (selectedIndex >= 0 && cardRefs.current[selectedIndex]) {
+      cardRefs.current[selectedIndex]?.scrollIntoView({ block: "nearest" });
+    }
+  }, [selectedIndex]);
+
+  // Reset selection when jobs change
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [filter, debouncedSearch]);
 
   return (
     <div className="p-4 md:p-6">
@@ -77,6 +148,10 @@ export default function JobsPage() {
           <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/jobs/import" />}>
             <FileUp className="mr-1 h-4 w-4" />
             Import CSV
+          </Button>
+          <Button size="sm" variant="outline" nativeButton={false} render={<Link href="/jobs/timeline" />}>
+            <GanttChart className="mr-1 h-4 w-4" />
+            Timeline
           </Button>
           <Button size="sm" nativeButton={false} render={<Link href="/jobs/new" />}>
             <Plus className="mr-1 h-4 w-4" />
@@ -151,57 +226,89 @@ export default function JobsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {(jobs ?? []).map((job) => (
-            <Link key={job.id} href={`/jobs/${job.id}`}>
-              <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]" title={`${job.title}\n${job.address || ""}\n${job.customer?.name || ""}`}>
-                <div className="mb-1.5 flex items-start justify-between gap-2">
-                  <div>
-                    <h3 className="text-sm font-semibold leading-tight">{job.title}</h3>
-                    <span className="text-[11px] text-muted-foreground">{job.jobNumber}</span>
-                  </div>
-                  <StatusBadge status={job.status} />
-                </div>
-                {job.address && (
-                  <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
-                    <MapPin className="h-3 w-3 flex-shrink-0" />
-                    {job.address}
-                  </div>
-                )}
-                <div className="flex flex-wrap items-center gap-2">
-                  {job.category && (
-                    <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-400">
-                      {job.category}
-                    </span>
-                  )}
-                  {job.actualCost != null && job.estimatedCost != null && job.actualCost > job.estimatedCost && (
-                    <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-400">
-                      Over Budget
-                    </span>
-                  )}
-                  {job.isRecurring && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
-                      Recurring
-                    </span>
-                  )}
-                  {job.crew && (
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <Users className="h-3 w-3" />
-                      {job.crew.name}
-                    </span>
-                  )}
-                </div>
-                {job.progress > 0 && (
-                  <div className="mt-2.5">
-                    <div className="h-1.5 overflow-hidden rounded-full bg-border">
-                      <div
-                        className="h-full rounded-full bg-green-500 transition-all"
-                        style={{ width: `${job.progress}%` }}
-                      />
+          {jobList.map((job, index) => (
+            <div
+              key={job.id}
+              ref={(el) => { cardRefs.current[index] = el; }}
+            >
+              <Link href={`/jobs/${job.id}`}>
+                <Card
+                  className={`cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px] ${
+                    index === selectedIndex ? "ring-2 ring-primary ring-offset-1 ring-offset-background" : ""
+                  }`}
+                  title={`${job.title}\n${job.address || ""}\n${job.customer?.name || ""}`}
+                >
+                  <div className="mb-1.5 flex items-start justify-between gap-2">
+                    <div>
+                      <h3 className="text-sm font-semibold leading-tight">{job.title}</h3>
+                      <span className="text-[11px] text-muted-foreground">{job.jobNumber}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {/* #27: Quick status dropdown */}
+                      <select
+                        value={localStatuses[job.id] ?? job.status}
+                        onClick={(e) => e.preventDefault()}
+                        onChange={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleQuickStatus(job.id, e.target.value);
+                        }}
+                        onClickCapture={(e) => e.stopPropagation()}
+                        onMouseDown={(e) => e.stopPropagation()}
+                        className="h-6 rounded border border-border bg-background px-1 text-[11px] text-muted-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                        aria-label={`Change status for ${job.title}`}
+                      >
+                        {ALL_STATUSES.map((s) => (
+                          <option key={s} value={s}>
+                            {STATUS_META[s]?.label || s}
+                          </option>
+                        ))}
+                      </select>
+                      <StatusBadge status={localStatuses[job.id] ?? job.status} />
                     </div>
                   </div>
-                )}
-              </Card>
-            </Link>
+                  {job.address && (
+                    <div className="mb-2 flex items-center gap-1 text-xs text-muted-foreground">
+                      <MapPin className="h-3 w-3 flex-shrink-0" />
+                      {job.address}
+                    </div>
+                  )}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {job.category && (
+                      <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-[11px] font-medium text-blue-400">
+                        {job.category}
+                      </span>
+                    )}
+                    {job.actualCost != null && job.estimatedCost != null && job.actualCost > job.estimatedCost && (
+                      <span className="rounded-full bg-red-500/15 px-2 py-0.5 text-[11px] font-medium text-red-400">
+                        Over Budget
+                      </span>
+                    )}
+                    {job.isRecurring && (
+                      <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        Recurring
+                      </span>
+                    )}
+                    {job.crew && (
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Users className="h-3 w-3" />
+                        {job.crew.name}
+                      </span>
+                    )}
+                  </div>
+                  {job.progress > 0 && (
+                    <div className="mt-2.5">
+                      <div className="h-1.5 overflow-hidden rounded-full bg-border">
+                        <div
+                          className="h-full rounded-full bg-green-500 transition-all"
+                          style={{ width: `${job.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
+                </Card>
+              </Link>
+            </div>
           ))}
         </div>
       )}

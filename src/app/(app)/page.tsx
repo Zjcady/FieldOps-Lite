@@ -4,7 +4,10 @@ import { StatusBadge } from "@/components/shared/status-badge";
 import { Card } from "@/components/ui/card";
 import { formatShortDate, formatCurrency } from "@/lib/format";
 import Link from "next/link";
-import { MapPin, Users, AlertTriangle, CheckCircle2, ClipboardList } from "lucide-react";
+import { MapPin, Users, AlertTriangle, CheckCircle2, ClipboardList, Package } from "lucide-react";
+import { QuickActions } from "@/components/dashboard/quick-actions";
+import { RecentActivity } from "@/components/dashboard/recent-activity";
+import { JobStatusDistribution } from "@/components/dashboard/job-status-distribution";
 import { getUser } from "@/lib/auth/get-user";
 
 export const dynamic = "force-dynamic";
@@ -40,6 +43,7 @@ export default async function DashboardPage() {
     lastMonthRevenue,
     unassignedCrews,
     recentPassedInspections,
+    materialsNeeded,
   ] = await Promise.all([
     prisma.job.count({
       where: { companyId, status: { in: ["active", "scheduled", "paused", "waiting_permit", "waiting_inspection", "waiting_materials"] } },
@@ -102,6 +106,16 @@ export default async function DashboardPage() {
       },
       include: { job: { select: { title: true } } },
       take: 5,
+    }),
+    // Materials needed but not yet ordered
+    prisma.material.findMany({
+      where: {
+        job: { companyId },
+        status: "needed",
+        orderedDate: null,
+      },
+      include: { job: { select: { title: true } } },
+      take: 10,
     }),
   ]);
 
@@ -174,6 +188,8 @@ export default async function DashboardPage() {
         />
       </div>
 
+      <JobStatusDistribution />
+
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Today&apos;s Jobs
@@ -245,7 +261,7 @@ export default async function DashboardPage() {
         Alerts
       </h2>
       <div className="space-y-3">
-        {expiringPermits.length === 0 && recentPassedInspections.length === 0 && (
+        {expiringPermits.length === 0 && recentPassedInspections.length === 0 && materialsNeeded.length === 0 && (
           <Card className="p-4 text-center">
             <p className="text-sm text-muted-foreground">No alerts at this time.</p>
           </Card>
@@ -278,7 +294,22 @@ export default async function DashboardPage() {
             </p>
           </Card>
         ))}
+        {materialsNeeded.map((material) => (
+          <Card key={material.id} className="border-l-[3px] border-l-orange-500 p-4">
+            <div className="mb-1 flex items-center gap-1.5 text-sm font-semibold text-orange-400">
+              <Package className="h-3.5 w-3.5" />
+              Material Needed
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Material needed: {material.name} for {material.job?.title ?? "Unknown job"}
+            </p>
+          </Card>
+        ))}
       </div>
+
+      <QuickActions />
+
+      <RecentActivity />
     </div>
   );
 }

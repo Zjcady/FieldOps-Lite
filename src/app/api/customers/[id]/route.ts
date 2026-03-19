@@ -19,6 +19,10 @@ export async function GET(
         select: { id: true, title: true, status: true, jobNumber: true, estimatedCost: true },
         orderBy: { createdAt: "desc" },
       },
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      },
     },
   });
 

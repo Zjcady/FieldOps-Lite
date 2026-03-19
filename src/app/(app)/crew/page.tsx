@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import Link from "next/link";
 import { CalendarDays, AlertCircle, UserPlus } from "lucide-react";
+import { SchedulingConflicts } from "@/components/crew/scheduling-conflicts";
 import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 
 interface CrewMember {
@@ -211,6 +212,8 @@ export default function CrewPage() {
           );
         })}
       </div>
+
+      <SchedulingConflicts />
 
       {unassignedCrews.length > 0 && (
         <>

@@ -12,7 +12,7 @@ import { useFetch, safeMutate } from "@/lib/hooks/use-fetch";
 import {
   MapPin, Users, Calendar, CheckCircle2, Circle,
   Clock, Image as ImageIcon, FileText, Pencil, AlertCircle, Loader2, Package, Archive, Trash2,
-  Copy, Printer, CalendarDays, X,
+  Copy, Printer, CalendarDays, X, GripVertical, CloudSun,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -405,6 +405,28 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </Card>
           )}
 
+          {/* Weather Note — show if job is scheduled within 7 days */}
+          {merged.scheduledDate && (() => {
+            const scheduled = new Date(merged.scheduledDate);
+            const daysUntil = Math.ceil((scheduled.getTime() - Date.now()) / 86400000);
+            if (daysUntil >= 0 && daysUntil <= 7) {
+              return (
+                <Card className="p-4">
+                  <div className="flex items-center gap-3">
+                    <CloudSun className="h-5 w-5 text-amber-400" />
+                    <div>
+                      <h3 className="text-sm font-semibold">Weather Note</h3>
+                      <p className="text-xs text-muted-foreground">
+                        Check local weather before dispatch — job scheduled {daysUntil === 0 ? "today" : `in ${daysUntil} day${daysUntil !== 1 ? "s" : ""}`}.
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              );
+            }
+            return null;
+          })()}
+
           <Card className="p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Log Time</h3>
             <div className="space-y-2">
@@ -469,8 +491,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
             <div className="space-y-1">
               {/* #34: aria-label on task buttons */}
+              {/* // TODO: Wire up @dnd-kit for actual drag-to-reorder */}
               {tasks.map((task) => (
                 <div key={task.id} className="flex items-center gap-1">
+                  <GripVertical className="h-4 w-4 flex-shrink-0 cursor-grab text-muted-foreground/50" />
                   <button
                     onClick={() => handleTaskToggle(task.id, task.status)}
                     aria-label={`${task.title}: ${task.status === "completed" ? "completed" : "pending"}`}

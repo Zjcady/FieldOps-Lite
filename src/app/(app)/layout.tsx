@@ -6,6 +6,7 @@ import { UserProvider } from "@/lib/auth/user-context";
 import { FocusReset } from "@/components/shared/focus-reset";
 import { CameraFab } from "@/components/shared/camera-fab";
 import { OfflineIndicator } from "@/components/shared/offline-indicator";
+import { CommandPalette } from "@/components/shared/command-palette";
 import { getUser } from "@/lib/auth/get-user";
 
 export default async function AppLayout({
@@ -24,7 +25,20 @@ export default async function AppLayout({
       >
         Skip to content
       </a>
+      <a
+        href="#app-sidebar"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to navigation
+      </a>
+      <a
+        href="#job-search"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:bg-primary focus:px-4 focus:py-2 focus:text-primary-foreground"
+      >
+        Skip to search
+      </a>
       <OfflineIndicator />
+      <CommandPalette />
       <SidebarProvider defaultOpen>
         <AppSidebar />
         <div className="flex min-h-screen flex-1 flex-col">
