@@ -21,17 +21,23 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"password" | "magic" | "forgot">("password");
 
+  const isSupabaseConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
+    if (isSupabaseConfigured) {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) {
+        toast.error(error.message);
+        setLoading(false);
+        return;
+      }
+    } else {
+      // Dev mode: no Supabase, just navigate (middleware lets everything through)
+      toast.success("Dev mode: signing in...");
     }
 
     router.push(next);

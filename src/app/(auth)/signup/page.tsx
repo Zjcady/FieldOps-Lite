@@ -22,6 +22,8 @@ export default function SignupPage() {
 
   const passwordStrength = getPasswordStrength(password);
 
+  const isSupabaseConfigured = !!(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -33,57 +35,71 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
+      let authId: string;
 
-      // 1. Create Supabase auth user
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, company_name: companyName },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      });
-
-      if (authError) {
-        toast.error(authError.message);
-        setLoading(false);
-        return;
-      }
-
-      if (!authData.user) {
-        toast.error("Failed to create account");
-        setLoading(false);
-        return;
-      }
-
-      // 2. Create company + user in our database via API
-      const res = await fetch("/api/auth/setup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          authId: authData.user.id,
+      if (isSupabaseConfigured) {
+        // Production: Create Supabase auth user first
+        const supabase = createClient();
+        const { data: authData, error: authError } = await supabase.auth.signUp({
           email,
-          name,
-          companyName,
-        }),
-      });
+          password,
+          options: {
+            data: { name, company_name: companyName },
+            emailRedirectTo: `${window.location.origin}/auth/callback`,
+          },
+        });
 
-      if (!res.ok) {
-        toast.error("Account created but setup failed. Please contact support.");
-        setLoading(false);
-        return;
+        if (authError) {
+          toast.error(authError.message);
+          setLoading(false);
+          return;
+        }
+
+        if (!authData.user) {
+          toast.error("Failed to create account");
+          setLoading(false);
+          return;
+        }
+
+        authId = authData.user.id;
+
+        // Create company + user in our database
+        const res = await fetch("/api/auth/setup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authId, email, name, companyName }),
+        });
+
+        if (!res.ok) {
+          toast.error("Account created but setup failed. Please contact support.");
+          setLoading(false);
+          return;
+        }
+
+        // Show email verification screen if needed
+        if (authData.user.identities?.length === 0 || authData.session === null) {
+          setSuccess(true);
+          setLoading(false);
+          return;
+        }
+      } else {
+        // Dev mode: No Supabase — create directly via setup API
+        authId = `dev-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+        const res = await fetch("/api/auth/setup", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authId, email, name, companyName }),
+        });
+
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: "Setup failed" }));
+          toast.error(err.error || "Failed to create account");
+          setLoading(false);
+          return;
+        }
       }
 
-      // #18: Show email verification screen instead of redirecting
-      if (authData.user.identities?.length === 0 || authData.session === null) {
-        // Email confirmation required
-        setSuccess(true);
-        setLoading(false);
-        return;
-      }
-
-      // If auto-confirmed (e.g. dev mode), go to dashboard
       toast.success("Account created! Redirecting...");
       router.push("/");
       router.refresh();
