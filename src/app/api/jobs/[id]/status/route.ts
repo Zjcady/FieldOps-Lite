@@ -1,24 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { canTransition, type JobStatus } from "@/lib/job-state-machine";
+import { authenticateApi, apiError, validateBody } from "@/lib/api-utils";
+import { jobStatusSchema } from "@/lib/validations/job";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
-  const { status: newStatus } = await request.json();
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
 
-  const job = await prisma.job.findUnique({ where: { id } });
-  if (!job) {
-    return NextResponse.json({ error: "Job not found" }, { status: 404 });
-  }
+  const [data, valErr] = await validateBody(request, jobStatusSchema);
+  if (valErr) return valErr;
+
+  const { id } = await params;
+  const newStatus = data.status;
+
+  const job = await prisma.job.findUnique({ where: { id, companyId: user.companyId } });
+  if (!job) return apiError("Job not found", 404);
 
   if (!canTransition(job.status as JobStatus, newStatus as JobStatus)) {
-    return NextResponse.json(
-      { error: `Cannot transition from ${job.status} to ${newStatus}` },
-      { status: 400 }
-    );
+    return apiError(`Cannot transition from ${job.status} to ${newStatus}`, 400);
   }
 
   const updateData: Record<string, unknown> = { status: newStatus };
@@ -34,6 +37,7 @@ export async function PATCH(
   await prisma.activityLog.create({
     data: {
       jobId: id,
+      userId: user.id,
       action: "status_change",
       details: JSON.stringify({ from: job.status, to: newStatus }),
     },

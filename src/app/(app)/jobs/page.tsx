@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { MapPin, Users, Plus } from "lucide-react";
+import { MapPin, Users, Plus, AlertCircle } from "lucide-react";
 import Link from "next/link";
+import { useFetch } from "@/lib/hooks/use-fetch";
 
 interface Job {
   id: string;
@@ -17,7 +18,7 @@ interface Job {
   progress: number;
   estimatedEnd: string | null;
   isRecurring: boolean;
-  crew: { name: string; members: { id: string }[] } | null;
+  crew: { name: string; _count?: { members: number } } | null;
   customer: { name: string } | null;
 }
 
@@ -30,20 +31,9 @@ const FILTERS = [
 ];
 
 export default function JobsPage() {
-  const [jobs, setJobs] = useState<Job[]>([]);
   const [filter, setFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
-
-  const fetchJobs = useCallback(async () => {
-    setLoading(true);
-    const params = filter !== "all" ? `?status=${filter}` : "";
-    const res = await fetch(`/api/jobs${params}`);
-    const data = await res.json();
-    setJobs(data);
-    setLoading(false);
-  }, [filter]);
-
-  useEffect(() => { fetchJobs(); }, [fetchJobs]);
+  const params = filter !== "all" ? `?status=${filter}` : "";
+  const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}`);
 
   return (
     <div className="p-4 md:p-6">
@@ -51,20 +41,22 @@ export default function JobsPage() {
         <div>
           <h1 className="text-lg font-semibold tracking-tight">All Jobs</h1>
           <p className="text-sm text-muted-foreground">
-            {jobs.length} jobs
+            {jobs?.length ?? 0} jobs
           </p>
         </div>
-        <Button size="sm">
+        <Button size="sm" nativeButton={false} render={<Link href="/jobs/new" />}>
           <Plus className="mr-1 h-4 w-4" />
           New Job
         </Button>
       </div>
 
-      <div className="mb-4 flex flex-wrap gap-1.5">
+      {/* #33: aria-pressed on filter buttons */}
+      <div className="mb-4 flex flex-wrap gap-1.5" role="group" aria-label="Job status filter">
         {FILTERS.map((f) => (
           <button
             key={f.value}
             onClick={() => setFilter(f.value)}
+            aria-pressed={filter === f.value}
             className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
               filter === f.value
                 ? "border-primary/40 bg-primary/15 text-primary"
@@ -76,6 +68,15 @@ export default function JobsPage() {
         ))}
       </div>
 
+      {/* #15: error state */}
+      {error && (
+        <Card className="mb-4 border-red-500/30 p-4">
+          <div className="flex items-center gap-2 text-sm text-red-400">
+            <AlertCircle className="h-4 w-4" /> {error}
+          </div>
+        </Card>
+      )}
+
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3].map((i) => (
@@ -84,7 +85,7 @@ export default function JobsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {jobs.map((job) => (
+          {(jobs ?? []).map((job) => (
             <Link key={job.id} href={`/jobs/${job.id}`}>
               <Card className="cursor-pointer p-4 transition-all hover:border-primary/30 hover:translate-y-[-1px]">
                 <div className="mb-1.5 flex items-start justify-between gap-2">

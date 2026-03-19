@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { authenticateApi } from "@/lib/api-utils";
 
 export async function GET() {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+
   const jobs = await prisma.job.findMany({
-    where: { status: { in: ["completed", "invoiced"] } },
+    where: { companyId: user.companyId, status: { in: ["completed", "invoiced"] } },
     select: { category: true, actualCost: true, estimatedCost: true },
   });
 
@@ -18,6 +22,7 @@ export async function GET() {
     .sort((a, b) => b.value - a.value);
 
   const invoices = await prisma.invoice.findMany({
+    where: { companyId: user.companyId },
     select: { total: true, status: true, createdAt: true },
   });
 

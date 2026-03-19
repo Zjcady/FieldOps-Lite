@@ -4,8 +4,14 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Triangle, Search, Bell } from "lucide-react";
 import Link from "next/link";
+import { APP_CONFIG } from "@/lib/app-config";
+import { useUser } from "@/lib/auth/user-context";
 
 export function Header() {
+  const user = useUser();
+  const initials = user
+    ? user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+    : "?";
   return (
     <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-border bg-card/80 px-4 backdrop-blur-md">
       <div className="flex items-center gap-3">
@@ -14,7 +20,7 @@ export function Header() {
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600">
             <Triangle className="h-3.5 w-3.5 text-white" fill="white" />
           </div>
-          <span className="text-base font-semibold tracking-tight">FieldOps Lite</span>
+          <span className="text-base font-semibold tracking-tight">{APP_CONFIG.name}</span>
         </Link>
       </div>
       <div className="flex items-center gap-2">
@@ -29,7 +35,7 @@ export function Header() {
         </button>
         <Avatar className="ml-1 h-8 w-8">
           <AvatarFallback className="bg-gradient-to-br from-primary to-purple-400 text-xs font-semibold text-white">
-            SC
+            {initials}
           </AvatarFallback>
         </Avatar>
       </div>

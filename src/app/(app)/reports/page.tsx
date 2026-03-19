@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
 import Link from "next/link";
-import { FileSpreadsheet, TrendingUp, Link2, Package } from "lucide-react";
+import { AlertCircle, FileSpreadsheet, TrendingUp, Link2, Package } from "lucide-react";
 
 interface RevenueData {
   revenueByCategory: { name: string; value: number }[];
@@ -24,21 +24,27 @@ const BAR_COLORS: Record<string, string> = {
   Other: "bg-slate-400",
 };
 
-export default function ReportsPage() {
-  const [data, setData] = useState<RevenueData | null>(null);
-  const [loading, setLoading] = useState(true);
+const currentMonth = new Date().toLocaleDateString("en-US", { month: "long" });
 
-  useEffect(() => {
-    fetch("/api/reports/revenue")
-      .then((r) => r.json())
-      .then((d) => { setData(d); setLoading(false); });
-  }, []);
+export default function ReportsPage() {
+  const { data, loading, error } = useFetch<RevenueData>("/api/reports/revenue");
 
   if (loading || !data) {
     return (
       <div className="p-4 md:p-6">
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
         <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-4 md:p-6">
+        <Card className="flex items-center gap-3 border-destructive/50 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <p className="text-sm">{error}</p>
+        </Card>
       </div>
     );
   }
@@ -56,7 +62,7 @@ export default function ReportsPage() {
       </h2>
 
       <Card className="mb-6 p-4">
-        <h3 className="mb-4 text-sm font-semibold">Revenue by Category — March</h3>
+        <h3 className="mb-4 text-sm font-semibold">Revenue by Category — {currentMonth}</h3>
         <div className="space-y-3">
           {data.revenueByCategory.map((item) => (
             <div key={item.name}>

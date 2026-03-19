@@ -11,6 +11,7 @@ import { STATUS_META } from "@/lib/job-state-machine";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Triangle, Send, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
+import { APP_CONFIG } from "@/lib/app-config";
 
 interface PortalJob {
   id: string;
@@ -118,7 +119,7 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <Triangle className="h-3.5 w-3.5 text-white" fill="white" />
           </div>
-          <span className="text-base font-semibold">FieldOps Lite</span>
+          <span className="text-base font-semibold">{APP_CONFIG.name}</span>
         </div>
         <div className="text-xs text-muted-foreground">Customer Project Portal</div>
       </div>
@@ -218,7 +219,7 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
             {data.messages.map((msg) => (
               <div key={msg.id}>
                 <div className={`text-[11px] ${msg.senderType === "customer" ? "text-right" : ""} text-muted-foreground`}>
-                  {formatDateTime(msg.createdAt)} · {msg.senderType === "customer" ? "You" : "BuildRight"}
+                  {formatDateTime(msg.createdAt)} · {msg.senderType === "customer" ? "You" : APP_CONFIG.companyPlaceholder}
                 </div>
                 <div
                   className={`mt-0.5 max-w-[80%] rounded-lg px-3 py-2 text-sm ${

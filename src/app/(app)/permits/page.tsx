@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useFetchAll } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Timeline } from "@/components/shared/timeline";
 import { formatDate } from "@/lib/format";
-import { AlertTriangle, FileText, CheckCircle2, XCircle, CalendarDays } from "lucide-react";
+import { AlertCircle, AlertTriangle, FileText, CheckCircle2, XCircle, CalendarDays } from "lucide-react";
 
 interface Permit {
   id: string;
@@ -50,20 +50,7 @@ const permitIcon = (status: string) => {
 };
 
 export default function PermitsPage() {
-  const [permits, setPermits] = useState<Permit[]>([]);
-  const [inspections, setInspections] = useState<Inspection[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    Promise.all([
-      fetch("/api/permits").then((r) => r.json()),
-      fetch("/api/inspections").then((r) => r.json()),
-    ]).then(([p, i]) => {
-      setPermits(p);
-      setInspections(i);
-      setLoading(false);
-    });
-  }, []);
+  const { data: [permits, inspections], loading, error } = useFetchAll<[Permit[], Inspection[]]>(["/api/permits", "/api/inspections"]);
 
   if (loading) {
     return (
@@ -74,15 +61,29 @@ export default function PermitsPage() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-4 md:p-6">
+        <Card className="flex items-center gap-3 border-destructive/50 p-4 text-destructive">
+          <AlertCircle className="h-5 w-5 shrink-0" />
+          <p className="text-sm">{error}</p>
+        </Card>
+      </div>
+    );
+  }
+
+  const safePermits = permits ?? [];
+  const safeInspections = inspections ?? [];
+
   const timelineItems = [
-    ...inspections.map((i) => ({
+    ...safeInspections.map((i) => ({
       id: i.id,
       title: `${i.job?.title || "Unknown"} — ${i.type} Inspection ${i.status === "passed" ? "Passed" : i.status === "failed" ? "Failed" : "Scheduled"}`,
       subtitle: `${formatDate(i.completedDate || i.scheduledDate)}${i.inspector ? ` · Inspector: ${i.inspector}` : ""}`,
       dotColor: i.status === "passed" ? "bg-green-400" : i.status === "failed" ? "bg-red-400" : "bg-blue-400",
       date: new Date(i.completedDate || i.scheduledDate || 0),
     })),
-    ...permits.map((p) => ({
+    ...safePermits.map((p) => ({
       id: p.id,
       title: `${p.job?.title || "Unknown"} — Permit ${p.status === "approved" ? "Approved" : p.status === "in_review" ? "Submitted" : p.status}`,
       subtitle: `${formatDate(p.issuedDate)}${p.jurisdiction ? ` · ${p.jurisdiction}` : ""}`,
@@ -96,7 +97,7 @@ export default function PermitsPage() {
       <div className="mb-4">
         <h1 className="text-lg font-semibold tracking-tight">Permits & Inspections</h1>
         <p className="text-sm text-muted-foreground">
-          {permits.length} permits · {inspections.length} inspections
+          {safePermits.length} permits · {safeInspections.length} inspections
         </p>
       </div>
 
@@ -109,7 +110,7 @@ export default function PermitsPage() {
 
         <TabsContent value="permits" className="mt-4">
           <div className="space-y-2">
-            {permits.map((permit) => (
+            {safePermits.map((permit) => (
               <Card key={permit.id} className="flex-row items-center gap-3 p-4">
                 {permitIcon(permit.status)}
                 <div className="flex-1 min-w-0">
@@ -128,7 +129,7 @@ export default function PermitsPage() {
 
         <TabsContent value="inspections" className="mt-4">
           <div className="space-y-2">
-            {inspections.map((insp) => (
+            {safeInspections.map((insp) => (
               <Card key={insp.id} className="flex-row items-center gap-3 p-4">
                 <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-secondary">
                   {inspectionIcon(insp.status)}

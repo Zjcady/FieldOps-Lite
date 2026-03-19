@@ -24,14 +24,17 @@ model Company {
   jobs        Job[]
   customers   Customer[]
   properties  Property[]
-  permits     Permit[]
-  inspections Inspection[]
-  vendors     Vendor[]
-  invoices    Invoice[]
+  permits        Permit[]
+  inspections    Inspection[]
+  vendors        Vendor[]
+  invoices       Invoice[]
+  timeEntries    TimeEntry[]
+  emailCampaigns EmailCampaign[]
 }
 
 model User {
   id        String   @id @default(uuid())
+  authId    String?  @unique
   companyId String
   email     String   @unique
   name      String
@@ -46,8 +49,10 @@ model User {
   crewMembers  CrewMember[]
   notes        Note[]
   activityLogs ActivityLog[]
+  timeEntries  TimeEntry[]
 
   @@index([companyId])
+  @@index([authId])
 }
 
 model Crew {
@@ -90,10 +95,11 @@ model Customer {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  company    Company         @relation(fields: [companyId], references: [id])
-  properties Property[]
-  jobs       Job[]
-  messages   PortalMessage[]
+  company         Company          @relation(fields: [companyId], references: [id])
+  properties      Property[]
+  jobs            Job[]
+  messages        PortalMessage[]
+  emailRecipients EmailRecipient[]
 
   @@index([companyId])
 }
@@ -159,11 +165,15 @@ model Job {
   materials    Material[]
   activityLogs ActivityLog[]
   invoices     Invoice[]
+  timeEntries  TimeEntry[]
 
   @@index([companyId])
   @@index([customerId])
   @@index([crewId])
   @@index([status])
+  @@index([category])
+  @@index([priority])
+  @@index([scheduledDate])
 }
 
 model Task {
@@ -190,6 +200,8 @@ model Photo {
   caption    String?
   category   String   @default("progress")
   uploadedBy String?
+  lat        Float?
+  lng        Float?
   createdAt  DateTime @default(now())
 
   job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
@@ -316,6 +328,7 @@ model Invoice {
 
   @@index([companyId])
   @@index([jobId])
+  @@index([status])
 }
 
 model ActivityLog {
@@ -343,4 +356,58 @@ model PortalMessage {
   customer Customer @relation(fields: [customerId], references: [id])
 
   @@index([customerId])
+}
+
+model TimeEntry {
+  id        String   @id @default(uuid())
+  companyId String
+  jobId     String
+  userId    String?
+  hours     Float
+  date      DateTime
+  notes     String?
+  billable  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+  job     Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user    User?   @relation(fields: [userId], references: [id])
+
+  @@index([companyId])
+  @@index([jobId])
+}
+
+model EmailCampaign {
+  id         String   @id @default(uuid())
+  companyId  String
+  name       String
+  subject    String
+  body       String
+  template   String   @default("general")
+  status     String   @default("draft")
+  sentAt     DateTime?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  company    Company          @relation(fields: [companyId], references: [id])
+  recipients EmailRecipient[]
+
+  @@index([companyId])
+}
+
+model EmailRecipient {
+  id         String   @id @default(uuid())
+  campaignId String
+  customerId String
+  email      String
+  status     String   @default("pending")
+  sentAt     DateTime?
+  openedAt   DateTime?
+  createdAt  DateTime @default(now())
+
+  campaign EmailCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  customer Customer      @relation(fields: [customerId], references: [id])
+
+  @@index([campaignId])
 }

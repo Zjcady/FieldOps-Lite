@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
+import Link from "next/link";
+import { CalendarDays, AlertCircle } from "lucide-react";
+import { useFetch } from "@/lib/hooks/use-fetch";
 
 interface CrewMember {
   id: string;
@@ -35,17 +37,10 @@ function getInitials(name: string) {
 }
 
 export default function CrewPage() {
-  const [crews, setCrews] = useState<Crew[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: crews, loading, error } = useFetch<Crew[]>("/api/crews");
 
-  useEffect(() => {
-    fetch("/api/crews")
-      .then((r) => r.json())
-      .then((d) => { setCrews(d); setLoading(false); });
-  }, []);
-
-  const assignedCrews = crews.filter((c) => c.jobs.length > 0);
-  const unassignedCrews = crews.filter((c) => c.jobs.length === 0);
+  const assignedCrews = (crews ?? []).filter((c) => c.jobs.length > 0);
+  const unassignedCrews = (crews ?? []).filter((c) => c.jobs.length === 0);
 
   if (loading) {
     return (
@@ -58,11 +53,21 @@ export default function CrewPage() {
     );
   }
 
+  if (error) {
+    return (<div className="p-4"><Card className="border-red-500/30 p-4"><div className="flex items-center gap-2 text-sm text-red-400"><AlertCircle className="h-4 w-4" />{error}</div></Card></div>);
+  }
+
   return (
     <div className="p-4 md:p-6">
-      <div className="mb-4">
-        <h1 className="text-lg font-semibold tracking-tight">Crew & Dispatch</h1>
-        <p className="text-sm text-muted-foreground">{crews.length} crews · {assignedCrews.length} active today</p>
+      <div className="mb-4 flex items-center justify-between">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Crew & Dispatch</h1>
+          <p className="text-sm text-muted-foreground">{crews?.length ?? 0} crews · {assignedCrews.length} active today</p>
+        </div>
+        <Link href="/crew/schedule" className="inline-flex h-7 items-center gap-1.5 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium transition-colors hover:bg-muted">
+          <CalendarDays className="h-3.5 w-3.5" />
+          Schedule
+        </Link>
       </div>
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">

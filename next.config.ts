@@ -1,9 +1,19 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    // React 19 + Radix UI asChild prop type mismatch (cosmetic only, no runtime impact)
-    ignoreBuildErrors: true,
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Frame-Options", value: "DENY" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "Permissions-Policy", value: "camera=(self), geolocation=(self), microphone=()" },
+          { key: "X-DNS-Prefetch-Control", value: "on" },
+        ],
+      },
+    ];
   },
 };
 

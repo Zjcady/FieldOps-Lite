@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { authenticateApi, apiError, validateBody } from "@/lib/api-utils";
+import { taskCreateSchema, taskUpdateSchema } from "@/lib/validations/job";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+
   const { id } = await params;
+
+  // Verify job belongs to company
+  const job = await prisma.job.findUnique({ where: { id, companyId: user.companyId }, select: { id: true } });
+  if (!job) return apiError("Job not found", 404);
+
   const tasks = await prisma.task.findMany({
     where: { jobId: id },
     orderBy: { sortOrder: "asc" },
@@ -17,8 +27,16 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
+
   const { id } = await params;
-  const body = await request.json();
+
+  const job = await prisma.job.findUnique({ where: { id, companyId: user.companyId }, select: { id: true } });
+  if (!job) return apiError("Job not found", 404);
+
+  const [body, valErr] = await validateBody(request, taskCreateSchema);
+  if (valErr) return valErr;
 
   const maxOrder = await prisma.task.findFirst({
     where: { jobId: id },
@@ -39,9 +57,22 @@ export async function POST(
 }
 
 export async function PATCH(request: NextRequest) {
-  const body = await request.json();
+  const [user, errorRes] = await authenticateApi();
+  if (errorRes) return errorRes;
 
-  const task = await prisma.task.update({
+  const [body, valErr] = await validateBody(request, taskUpdateSchema);
+  if (valErr) return valErr;
+
+  // Fix #1: Company-scope the task update by joining through the job
+  const task = await prisma.task.findFirst({
+    where: {
+      id: body.taskId,
+      job: { companyId: user.companyId },
+    },
+  });
+  if (!task) return apiError("Task not found", 404);
+
+  const updated = await prisma.task.update({
     where: { id: body.taskId },
     data: {
       status: body.status,
@@ -49,5 +80,5 @@ export async function PATCH(request: NextRequest) {
     },
   });
 
-  return NextResponse.json(task);
+  return NextResponse.json(updated);
 }

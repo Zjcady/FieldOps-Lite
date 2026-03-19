@@ -1,0 +1,53 @@
+import { NextRequest, NextResponse } from "next/server";
+import prisma from "@/lib/prisma";
+
+/**
+ * POST /api/auth/setup
+ * Called after Supabase signup to create Company + User in our database.
+ */
+export async function POST(request: NextRequest) {
+  const { authId, email, name, companyName } = await request.json();
+
+  if (!authId || !email || !name || !companyName) {
+    return NextResponse.json(
+      { error: "Missing required fields" },
+      { status: 400 }
+    );
+  }
+
+  // Check if user already exists
+  const existing = await prisma.user.findUnique({ where: { authId } });
+  if (existing) {
+    return NextResponse.json({ message: "Already set up" });
+  }
+
+  // Create company and user in a transaction
+  const slug = companyName
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/(^-|-$)/g, "");
+
+  const result = await prisma.$transaction(async (tx) => {
+    const company = await tx.company.create({
+      data: {
+        name: companyName,
+        slug: `${slug}-${Date.now().toString(36)}`,
+        email,
+      },
+    });
+
+    const user = await tx.user.create({
+      data: {
+        authId,
+        companyId: company.id,
+        email,
+        name,
+        role: "owner",
+      },
+    });
+
+    return { company, user };
+  });
+
+  return NextResponse.json(result, { status: 201 });
+}

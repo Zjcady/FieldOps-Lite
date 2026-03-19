@@ -5,27 +5,40 @@ import { Card } from "@/components/ui/card";
 import { formatShortDate, formatCurrency } from "@/lib/format";
 import Link from "next/link";
 import { MapPin, Users, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { getUser } from "@/lib/auth/get-user";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
+  const user = await getUser();
+  const companyId = user?.companyId;
+
+  // If no user (shouldn't happen due to middleware), show empty state
+  if (!companyId) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <p className="text-muted-foreground">Please sign in to view your dashboard.</p>
+      </div>
+    );
+  }
+
   const [activeJobs, pendingPermits, revenue, crewsOut, todaysJobs] =
     await Promise.all([
       prisma.job.count({
-        where: { status: { in: ["active", "scheduled", "paused", "waiting_permit", "waiting_inspection", "waiting_materials"] } },
+        where: { companyId, status: { in: ["active", "scheduled", "paused", "waiting_permit", "waiting_inspection", "waiting_materials"] } },
       }),
       prisma.permit.count({
-        where: { status: { in: ["pending", "submitted", "in_review"] } },
+        where: { companyId, status: { in: ["pending", "submitted", "in_review"] } },
       }),
       prisma.invoice.aggregate({
         _sum: { total: true },
-        where: { status: { in: ["paid", "sent"] } },
+        where: { companyId, status: { in: ["paid", "sent"] } },
       }),
       prisma.crew.count({
-        where: { jobs: { some: { status: "active" } } },
+        where: { companyId, jobs: { some: { status: "active" } } },
       }),
       prisma.job.findMany({
-        where: { status: { in: ["active", "scheduled"] } },
+        where: { companyId, status: { in: ["active", "scheduled"] } },
         include: {
           customer: true,
           crew: { include: { members: true } },
