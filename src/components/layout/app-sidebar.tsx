@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -14,6 +15,7 @@ import {
   UserCircle,
   DollarSign,
   Mail,
+  Receipt,
 } from "lucide-react";
 import { APP_CONFIG } from "@/lib/app-config";
 import { useUser } from "@/lib/auth/user-context";
@@ -41,6 +43,7 @@ const navItems = [
   { href: "/customers", icon: UserCircle, label: "Customers" },
   { href: "/permits", icon: FileText, label: "Permits" },
   { href: "/finance", icon: DollarSign, label: "Finance" },
+  { href: "/invoices", icon: Receipt, label: "Invoices" },
   { href: "/outreach", icon: Mail, label: "Outreach" },
   { href: "/reports", icon: BarChart3, label: "Reports" },
 ];
@@ -59,11 +62,18 @@ export function AppSidebar() {
         .slice(0, 2)
     : "?";
 
+  const [signingOut, setSigningOut] = useState(false);
+
   const handleSignOut = async () => {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    setSigningOut(true);
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/login");
+      router.refresh();
+    } catch {
+      setSigningOut(false);
+    }
   };
 
   return (
@@ -116,10 +126,16 @@ export function AppSidebar() {
           {user && (
             <button
               onClick={handleSignOut}
-              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              disabled={signingOut}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50"
               title="Sign out"
+              aria-label="Sign out"
             >
-              <LogOut className="h-3.5 w-3.5" />
+              {signingOut ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-muted-foreground border-t-transparent" />
+              ) : (
+                <LogOut className="h-3.5 w-3.5" />
+              )}
             </button>
           )}
         </div>

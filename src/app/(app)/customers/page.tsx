@@ -24,6 +24,7 @@ export default function CustomersPage() {
   const [newName, setNewName] = useState("");
   const [newEmail, setNewEmail] = useState("");
   const [newPhone, setNewPhone] = useState("");
+  const [newAddress, setNewAddress] = useState("");
   const [adding, setAdding] = useState(false);
 
   const handleAdd = async () => {
@@ -33,12 +34,13 @@ export default function CustomersPage() {
       const res = await fetch("/api/customers", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName, email: newEmail || null, phone: newPhone || null }),
+        body: JSON.stringify({ name: newName, email: newEmail || null, phone: newPhone || null, address: newAddress || null }),
       });
       if (res.ok) {
         setNewName("");
         setNewEmail("");
         setNewPhone("");
+        setNewAddress("");
         setShowAdd(false);
         toast.success("Customer added!");
         refetch();
@@ -72,6 +74,7 @@ export default function CustomersPage() {
             <Input placeholder="Email" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
             <Input placeholder="Phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
           </div>
+          <Input placeholder="Address" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} disabled={adding || !newName.trim()}>Add</Button>
             <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>

@@ -1,11 +1,14 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
 import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
-import { AlertCircle, ArrowLeft, Mail, Phone, MapPin } from "lucide-react";
+import { AlertCircle, ArrowLeft, Mail, Phone, MapPin, Pencil, X, Check } from "lucide-react";
 import Link from "next/link";
+import { toast } from "sonner";
 
 interface CustomerDetail {
   id: string;
@@ -19,7 +22,54 @@ interface CustomerDetail {
 
 export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: customer, loading, error } = useFetch<CustomerDetail>(`/api/customers/${id}`);
+  const { data: customer, loading, error, refetch } = useFetch<CustomerDetail>(`/api/customers/${id}`);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editAddress, setEditAddress] = useState("");
+
+  const startEdit = () => {
+    if (!customer) return;
+    setEditName(customer.name);
+    setEditEmail(customer.email || "");
+    setEditPhone(customer.phone || "");
+    setEditAddress(customer.address || "");
+    setEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setEditing(false);
+  };
+
+  const saveEdit = async () => {
+    if (!editName.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch(`/api/customers/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: editName,
+          email: editEmail || null,
+          phone: editPhone || null,
+          address: editAddress || null,
+        }),
+      });
+      if (res.ok) {
+        toast.success("Customer updated!");
+        setEditing(false);
+        refetch();
+      } else {
+        toast.error("Failed to update customer");
+      }
+    } catch {
+      toast.error("Network error");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading || !customer) {
     return (
@@ -48,12 +98,38 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         Back to Customers
       </Link>
 
-      <h1 className="mb-1 text-lg font-semibold tracking-tight">{customer.name}</h1>
-      <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
-        {customer.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {customer.email}</span>}
-        {customer.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {customer.phone}</span>}
-        {customer.address && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {customer.address}</span>}
-      </div>
+      {editing ? (
+        <Card className="mb-4 p-4 space-y-3">
+          <Input placeholder="Customer name *" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+          <div className="grid grid-cols-2 gap-3">
+            <Input placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            <Input placeholder="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+          </div>
+          <Input placeholder="Address" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+          <div className="flex gap-2">
+            <Button size="sm" onClick={saveEdit} disabled={saving || !editName.trim()}>
+              <Check className="mr-1 h-3.5 w-3.5" /> Save
+            </Button>
+            <Button size="sm" variant="outline" onClick={cancelEdit}>
+              <X className="mr-1 h-3.5 w-3.5" /> Cancel
+            </Button>
+          </div>
+        </Card>
+      ) : (
+        <>
+          <div className="mb-1 flex items-center gap-2">
+            <h1 className="text-lg font-semibold tracking-tight">{customer.name}</h1>
+            <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0">
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+          <div className="mb-4 flex flex-wrap gap-3 text-sm text-muted-foreground">
+            {customer.email && <span className="flex items-center gap-1"><Mail className="h-3.5 w-3.5" /> {customer.email}</span>}
+            {customer.phone && <span className="flex items-center gap-1"><Phone className="h-3.5 w-3.5" /> {customer.phone}</span>}
+            {customer.address && <span className="flex items-center gap-1"><MapPin className="h-3.5 w-3.5" /> {customer.address}</span>}
+          </div>
+        </>
+      )}
 
       <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
         Jobs ({customer.jobs.length})

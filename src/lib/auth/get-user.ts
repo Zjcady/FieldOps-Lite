@@ -45,10 +45,12 @@ export async function getUser(): Promise<AppUser | null> {
       role: true,
       avatarUrl: true,
       phone: true,
+      isActive: true,
     },
   });
 
-  if (!user || !user.authId) return null;
+  // #16: Reject deactivated users
+  if (!user || !user.authId || !user.isActive) return null;
 
   return user as AppUser;
 }

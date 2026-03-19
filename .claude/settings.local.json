@@ -43,7 +43,14 @@
       "Bash(nslookup livelaughtoasterbath.com)",
       "Bash(nslookup www.livelaughtoasterbath.com)",
       "Bash(xargs grep -l \"theme\\\\|provider\")",
-      "Bash(npx vercel inspect --scope zjcady-7455s-projects)"
+      "Bash(npx vercel inspect --scope zjcady-7455s-projects)",
+      "Bash(xargs ls:*)",
+      "Bash(npx next:*)",
+      "Bash(npx prisma:*)",
+      "Bash(npm install:*)",
+      "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.ZodType ? ''zod v3'' : ''unknown''\\)\")",
+      "Bash(node -e \"import\\(''zod''\\).then\\(z => console.log\\(Object.keys\\(z\\).slice\\(0,5\\)\\)\\)\")",
+      "Bash(npm ls:*)"
     ]
   }
 }

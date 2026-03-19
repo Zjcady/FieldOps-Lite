@@ -22,16 +22,25 @@ export async function POST(request: NextRequest) {
   }
 
   // Create company and user in a transaction
-  const slug = companyName
+  const baseSlug = companyName
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/(^-|-$)/g, "");
+
+  // Ensure slug uniqueness by checking existing slugs with same prefix
+  let slug = baseSlug;
+  const existingSlug = await prisma.company.findFirst({
+    where: { slug: { startsWith: baseSlug } },
+  });
+  if (existingSlug) {
+    slug = `${baseSlug}-${Date.now().toString(36)}`;
+  }
 
   const result = await prisma.$transaction(async (tx) => {
     const company = await tx.company.create({
       data: {
         name: companyName,
-        slug: `${slug}-${Date.now().toString(36)}`,
+        slug,
         email,
       },
     });

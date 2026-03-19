@@ -177,6 +177,15 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         )}
       </div>
 
+      {merged.estimatedCost && merged.actualCost && merged.actualCost > merged.estimatedCost && (
+        <Card className="mb-4 border-l-[3px] border-l-red-500 p-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-red-400">
+            <AlertCircle className="h-4 w-4" />
+            Over budget by {formatCurrency(merged.actualCost - merged.estimatedCost)} ({((merged.actualCost / merged.estimatedCost - 1) * 100).toFixed(0)}%)
+          </div>
+        </Card>
+      )}
+
       {/* #23: status buttons with loading state */}
       {transitions.length > 0 && (
         <div className="mb-4 flex flex-wrap gap-2">
@@ -199,6 +208,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="tasks">Tasks ({completedTasks}/{tasks.length})</TabsTrigger>
           <TabsTrigger value="photos">Photos ({merged.photos.length})</TabsTrigger>
+          <TabsTrigger value="notes">Notes ({merged.notes.length})</TabsTrigger>
           <TabsTrigger value="timeline">Timeline</TabsTrigger>
         </TabsList>
 
@@ -274,16 +284,50 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           <div className="grid grid-cols-2 gap-2 md:grid-cols-3">
             {merged.photos.map((photo) => (
               <Card key={photo.id} className="group relative flex aspect-square cursor-pointer items-center justify-center overflow-hidden transition-all hover:border-primary/30">
-                <div className="flex flex-col items-center gap-2">
-                  <ImageIcon className="h-8 w-8 text-muted-foreground/20 transition-colors group-hover:text-muted-foreground/40" />
-                  {photo.caption && (<div className="px-2 text-center text-[10px] leading-tight text-muted-foreground">{photo.caption}</div>)}
-                </div>
+                {photo.url && photo.url.startsWith("http") ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={photo.url} alt={photo.caption || "Job photo"} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="flex flex-col items-center gap-2">
+                    <ImageIcon className="h-8 w-8 text-muted-foreground/20 transition-colors group-hover:text-muted-foreground/40" />
+                    {photo.caption && (<div className="px-2 text-center text-[10px] leading-tight text-muted-foreground">{photo.caption}</div>)}
+                  </div>
+                )}
                 <div className="absolute right-1.5 top-1.5">
                   <span className="rounded-full bg-secondary px-1.5 py-0.5 text-[9px] text-muted-foreground">{photo.category}</span>
                 </div>
+                {photo.url && photo.url.startsWith("http") && photo.caption && (
+                  <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-2">
+                    <div className="text-[10px] leading-tight text-white">{photo.caption}</div>
+                  </div>
+                )}
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        <TabsContent value="notes" className="mt-4">
+          <Card className="p-4">
+            {merged.notes.length > 0 ? (
+              <div className="space-y-3">
+                {merged.notes.map((note) => (
+                  <div key={note.id} className="rounded-lg border border-border p-3">
+                    <p className="text-sm whitespace-pre-wrap">{note.content}</p>
+                    <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{note.user?.name || "System"}</span>
+                      <span>&middot;</span>
+                      <span>{formatDateTime(note.createdAt)}</span>
+                      {note.type !== "general" && (
+                        <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px]">{note.type}</span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">No notes yet.</p>
+            )}
+          </Card>
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">

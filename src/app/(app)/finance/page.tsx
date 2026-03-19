@@ -4,7 +4,8 @@ import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
-import { AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Clock } from "lucide-react";
+import { AlertCircle, AlertTriangle, TrendingUp, TrendingDown, Clock, FileSpreadsheet, Receipt } from "lucide-react";
+import Link from "next/link";
 
 interface FinanceData {
   revenue: { totalInvoiced: number; totalPaid: number; totalOutstanding: number };
@@ -49,6 +50,15 @@ export default function FinancePage() {
     <div className="p-4 md:p-6">
       <h1 className="mb-1 text-lg font-semibold tracking-tight">Financial Overview</h1>
       <p className="mb-4 text-sm text-muted-foreground">Margin analysis and operational insights</p>
+
+      <div className="mb-4 flex gap-2">
+        <a href="/api/export?type=jobs&format=csv" download className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium hover:bg-muted">
+          <FileSpreadsheet className="h-3.5 w-3.5" /> Export CSV
+        </a>
+        <Link href="/invoices" className="inline-flex h-7 items-center gap-1 rounded-[min(var(--radius-md),12px)] border border-border bg-background px-2.5 text-[0.8rem] font-medium hover:bg-muted">
+          <Receipt className="h-3.5 w-3.5" /> Invoices
+        </Link>
+      </div>
 
       {/* Revenue metrics */}
       <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">

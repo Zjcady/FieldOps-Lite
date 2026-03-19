@@ -103,8 +103,8 @@ export default function ReportsPage() {
       </h2>
       <div className="mb-6 grid grid-cols-2 gap-3">
         {[
-          { icon: FileSpreadsheet, title: "QuickBooks Export", sub: "CSV ready", color: "bg-green-500/15 text-green-400" },
-          { icon: TrendingUp, title: "Power BI Export", sub: "Analytics tables", color: "bg-blue-500/15 text-blue-400" },
+          { icon: FileSpreadsheet, title: "QuickBooks Export", sub: "CSV ready", href: "/api/export?type=jobs&format=csv", color: "bg-green-500/15 text-green-400" },
+          { icon: TrendingUp, title: "Power BI Export", sub: "Analytics tables", href: "/api/export?type=jobs&format=json", color: "bg-blue-500/15 text-blue-400" },
           { icon: Link2, title: "Customer Portal", sub: "Share project link", href: "/portal/mrt-x7f2k9", color: "bg-purple-500/15 text-purple-400" },
           { icon: Package, title: "Material Orders", sub: "Compare vendors", color: "bg-amber-500/15 text-amber-400" },
         ].map((action) => {

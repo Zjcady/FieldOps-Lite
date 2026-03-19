@@ -32,8 +32,10 @@ const FILTERS = [
 
 export default function JobsPage() {
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
   const params = filter !== "all" ? `?status=${filter}` : "";
-  const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}`);
+  const searchParam = search ? `${params ? "&" : "?"}search=${encodeURIComponent(search)}` : "";
+  const { data: jobs, loading, error } = useFetch<Job[]>(`/api/jobs${params}${searchParam}`);
 
   return (
     <div className="p-4 md:p-6">
@@ -48,6 +50,15 @@ export default function JobsPage() {
           <Plus className="mr-1 h-4 w-4" />
           New Job
         </Button>
+      </div>
+
+      <div className="mb-3">
+        <input
+          placeholder="Search jobs..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex h-8 w-full rounded-md border border-input bg-background px-3 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+        />
       </div>
 
       {/* #33: aria-pressed on filter buttons */}

@@ -34,6 +34,22 @@ export default function OutreachPage() {
   const { data: campaigns, loading, error, refetch } = useFetch<Campaign[]>("/api/outreach/campaigns");
   const [showCreate, setShowCreate] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [previewCampaign, setPreviewCampaign] = useState<Campaign | null>(null);
+  const [sending, setSending] = useState<string | null>(null);
+
+  const handleSend = async (campaignId: string) => {
+    setSending(campaignId);
+    try {
+      const res = await fetch(`/api/outreach/campaigns/${campaignId}/send`, { method: "POST" });
+      if (res.ok) {
+        toast.success("Campaign sent!");
+        refetch();
+      } else {
+        toast.error("Failed to send campaign");
+      }
+    } catch { toast.error("Network error"); }
+    finally { setSending(null); }
+  };
   const [form, setForm] = useState({ name: "", subject: "", body: "", template: "general", filter: "all" });
 
   const handleCreate = async () => {
@@ -168,11 +184,34 @@ export default function OutreachPage() {
                   {c.status}
                 </span>
               </div>
+              {c.status === "draft" && (
+                <div className="mt-2 flex gap-2">
+                  <Button size="xs" variant="outline" onClick={() => setPreviewCampaign(c)}>Preview</Button>
+                  <Button size="xs" onClick={() => handleSend(c.id)}>Send</Button>
+                </div>
+              )}
               <div className="mt-2 text-[11px] text-muted-foreground">
                 {c.sentAt ? `Sent ${formatDate(c.sentAt)}` : `Created ${formatDate(c.createdAt)}`}
               </div>
             </Card>
           ))}
+        </div>
+      )}
+
+      {previewCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewCampaign(null)}>
+          <Card className="max-h-[80vh] w-full max-w-md overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h3 className="text-sm font-semibold">Email Preview</h3>
+              <button onClick={() => setPreviewCampaign(null)} className="text-muted-foreground hover:text-foreground">✕</button>
+            </div>
+            <div className="space-y-3 rounded-lg border border-border p-4">
+              <div className="text-xs text-muted-foreground">Subject:</div>
+              <div className="text-sm font-medium">{previewCampaign.subject}</div>
+              <div className="border-t border-border pt-3 text-sm whitespace-pre-wrap">{previewCampaign.body || "(No body content)"}</div>
+            </div>
+            <div className="mt-3 text-xs text-muted-foreground">{previewCampaign.stats.total} recipients</div>
+          </Card>
         </div>
       )}
     </div>

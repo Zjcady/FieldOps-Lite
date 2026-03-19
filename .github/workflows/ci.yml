@@ -62,4 +62,4 @@ jobs:
         run: npm ci
 
       - name: Push DB schema
-        run: npx prisma db push --accept-data-loss
+        run: npx prisma migrate deploy
