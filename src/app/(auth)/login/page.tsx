@@ -36,8 +36,17 @@ export default function LoginPage() {
         return;
       }
     } else {
-      // Dev mode: no Supabase, just navigate (middleware lets everything through)
-      toast.success("Dev mode: signing in...");
+      // Dev mode: set dev auth cookie to log in as this user
+      const loginRes = await fetch("/api/auth/dev-login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (!loginRes.ok) {
+        toast.error("User not found. Please sign up first.");
+        setLoading(false);
+        return;
+      }
     }
 
     router.push(next);

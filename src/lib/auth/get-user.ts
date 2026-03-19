@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 import prisma from "@/lib/prisma";
 
 export type AppUser = {
@@ -12,21 +13,52 @@ export type AppUser = {
   phone: string | null;
 };
 
+const USER_SELECT = {
+  id: true, authId: true, companyId: true, email: true,
+  name: true, role: true, avatarUrl: true, phone: true, isActive: true,
+} as const;
+
+/**
+ * Dev mode cookie name — stores the authId of the currently "logged in" dev user.
+ */
+export const DEV_AUTH_COOKIE = "fieldops_dev_auth";
+
 /**
  * Get the currently authenticated user from Supabase session + Prisma.
+ * In dev mode (no Supabase env vars), uses a cookie to track which user is active.
  * Returns null if not authenticated or user not found in database.
  */
 export async function getUser(): Promise<AppUser | null> {
-  // If Supabase is not configured, fall back to first user (dev mode only)
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    const devUser = await prisma.user.findFirst({
-      select: { id: true, authId: true, companyId: true, email: true, name: true, role: true, avatarUrl: true, phone: true },
-      orderBy: { createdAt: "asc" },
-    });
-    if (devUser) return { ...devUser, authId: devUser.authId ?? "dev" } as AppUser;
-    return null;
+  const isSupabaseConfigured = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!isSupabaseConfigured) {
+    // Dev mode: use cookie to identify active user
+    const cookieStore = await cookies();
+    const devAuthId = cookieStore.get(DEV_AUTH_COOKIE)?.value;
+
+    let devUser;
+    if (devAuthId) {
+      // Look up the specific dev user
+      devUser = await prisma.user.findUnique({
+        where: { authId: devAuthId },
+        select: USER_SELECT,
+      });
+    }
+
+    // Fall back to first user if cookie not set or user not found
+    if (!devUser) {
+      devUser = await prisma.user.findFirst({
+        where: { isActive: true },
+        select: USER_SELECT,
+        orderBy: { createdAt: "asc" },
+      });
+    }
+
+    if (!devUser || !devUser.isActive) return null;
+    return { ...devUser, authId: devUser.authId ?? "dev" } as AppUser;
   }
 
+  // Production: Supabase auth
   const supabase = await createClient();
   const {
     data: { user: authUser },
@@ -36,20 +68,9 @@ export async function getUser(): Promise<AppUser | null> {
 
   const user = await prisma.user.findUnique({
     where: { authId: authUser.id },
-    select: {
-      id: true,
-      authId: true,
-      companyId: true,
-      email: true,
-      name: true,
-      role: true,
-      avatarUrl: true,
-      phone: true,
-      isActive: true,
-    },
+    select: USER_SELECT,
   });
 
-  // #16: Reject deactivated users
   if (!user || !user.authId || !user.isActive) return null;
 
   return user as AppUser;

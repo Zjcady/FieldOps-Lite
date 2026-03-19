@@ -98,6 +98,13 @@ export default function SignupPage() {
           setLoading(false);
           return;
         }
+
+        // Set dev auth cookie so getUser() returns THIS user, not seed data
+        await fetch("/api/auth/dev-login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ authId }),
+        });
       }
 
       toast.success("Account created! Redirecting...");
