@@ -52,7 +52,7 @@ export default function ReportsPage() {
 
   if (loading || !data) {
     return (
-      <div className="p-4 md:p-6">
+      <div className="p-4 md:p-6" aria-busy={true}>
         <div className="h-8 w-48 animate-pulse rounded bg-muted" />
         <div className="mt-4 h-64 animate-pulse rounded-xl bg-card" />
       </div>
@@ -92,6 +92,9 @@ export default function ReportsPage() {
       <Card className="mb-6 p-4">
         <h3 className="mb-4 text-sm font-semibold">Revenue by Category — {currentMonth}</h3>
         <div className="space-y-3">
+          {data.revenueByCategory.length === 0 && (
+            <p className="py-4 text-center text-sm text-muted-foreground">No revenue data for this period.</p>
+          )}
           {data.revenueByCategory.map((item) => (
             <div key={item.name}>
               <div className="mb-1 flex justify-between text-sm">
@@ -199,6 +202,7 @@ export default function ReportsPage() {
             <select
               value={selectedCustomerId || selectedCustomer?.id || ""}
               onChange={(e) => setSelectedCustomerId(e.target.value)}
+              aria-label="Select customer for portal preview"
               className="mb-3 flex h-8 w-full rounded-md border border-input bg-background px-3 text-sm"
             >
               {portalCustomers.map((c) => (

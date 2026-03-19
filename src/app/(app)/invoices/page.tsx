@@ -73,6 +73,7 @@ export default function InvoicesPage() {
                     href={`/api/invoices/${inv.id}/pdf`}
                     target="_blank"
                     rel="noopener noreferrer"
+                    aria-label={`View PDF for invoice ${inv.invoiceNumber}`}
                     className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
                   >
                     <ExternalLink className="h-3 w-3" />
@@ -85,6 +86,7 @@ export default function InvoicesPage() {
                       className="mt-2"
                       disabled={markingPaid === inv.id}
                       onClick={() => handleMarkPaid(inv.id)}
+                      aria-label={`Mark invoice ${inv.invoiceNumber} as paid`}
                     >
                       {markingPaid === inv.id ? "Marking..." : "Mark Paid"}
                     </Button>

@@ -53,8 +53,10 @@ export default function MaterialComparePage() {
       )}
 
       {loading && !data && (
-        <div className="flex justify-center p-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="space-y-4" aria-busy={true}>
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="h-32 animate-pulse" />
+          ))}
         </div>
       )}
 

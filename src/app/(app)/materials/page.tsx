@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Package, Plus, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import Link from "next/link";
 
 interface Material {
@@ -101,12 +102,20 @@ export default function MaterialsPage() {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await fetch(`/api/materials/${id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ status }),
-    });
-    refetch();
+    try {
+      const res = await fetch(`/api/materials/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        toast.error("Failed to update status");
+        return;
+      }
+      refetch();
+    } catch {
+      toast.error("Network error updating status");
+    }
   };
 
   return (
@@ -165,6 +174,7 @@ export default function MaterialsPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             <Input
               placeholder="Material name"
+              aria-label="Material name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
@@ -172,6 +182,7 @@ export default function MaterialsPage() {
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
               value={jobId}
               onChange={(e) => setJobId(e.target.value)}
+              aria-label="Select job"
             >
               <option value="">Select job...</option>
               {jobs?.map((j) => (
@@ -184,6 +195,7 @@ export default function MaterialsPage() {
               className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
               value={vendorId}
               onChange={(e) => setVendorId(e.target.value)}
+              aria-label="Select vendor"
             >
               <option value="">Select vendor (optional)</option>
               {vendors?.map((v) => (
@@ -195,17 +207,20 @@ export default function MaterialsPage() {
             <Input
               type="number"
               placeholder="Quantity"
+              aria-label="Quantity"
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
             />
             <Input
               placeholder="Unit (e.g., each, sqft)"
+              aria-label="Unit"
               value={unit}
               onChange={(e) => setUnit(e.target.value)}
             />
             <Input
               type="number"
               placeholder="Unit cost"
+              aria-label="Unit cost"
               value={unitCost}
               onChange={(e) => setUnitCost(e.target.value)}
             />
@@ -237,8 +252,10 @@ export default function MaterialsPage() {
       )}
 
       {loading && !materials && (
-        <div className="flex justify-center p-12">
-          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="space-y-3" aria-busy={true}>
+          {[1, 2, 3].map((i) => (
+            <Card key={i} className="h-16 animate-pulse" />
+          ))}
         </div>
       )}
 
@@ -294,6 +311,7 @@ export default function MaterialsPage() {
                       className="rounded border bg-background px-2 py-1 text-xs"
                       value={m.status}
                       onChange={(e) => updateStatus(m.id, e.target.value)}
+                      aria-label={`Change status for ${m.name}`}
                     >
                       {STATUSES.map((s) => (
                         <option key={s} value={s}>

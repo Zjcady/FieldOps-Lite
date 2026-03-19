@@ -66,12 +66,16 @@ function getActionLabel(action: string, details: string | null): string {
 export default function ActivityPage() {
   const [logs, setLogs] = useState<ActivityLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/activity")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load activity (${r.status})`);
+        return r.json();
+      })
       .then((data) => setLogs(Array.isArray(data) ? data : []))
-      .catch(() => setLogs([]))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load activity"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -83,7 +87,21 @@ export default function ActivityPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div>
+        <div className="space-y-3">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="flex gap-3">
+              <div className="h-8 w-8 shrink-0 animate-pulse rounded-full bg-muted" />
+              <div className="flex-1 space-y-2 py-1">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-500/30 p-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       ) : logs.length === 0 ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">No activity yet.</div>
       ) : (

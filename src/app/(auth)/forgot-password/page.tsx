@@ -71,6 +71,7 @@ export default function ForgotPasswordPage() {
           <Input
             type="email"
             placeholder="Email"
+            aria-label="Email address"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required

@@ -34,12 +34,16 @@ function parseCity(address: string): string {
 export default function MapPage() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/jobs?take=500")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`Failed to load jobs (${r.status})`);
+        return r.json();
+      })
       .then((data) => setJobs(Array.isArray(data) ? data : []))
-      .catch(() => setJobs([]))
+      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load jobs"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -74,7 +78,15 @@ export default function MapPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20 text-muted-foreground">Loading...</div>
+        <div className="space-y-4">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-24 animate-pulse rounded-lg bg-muted" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="rounded-lg border border-red-500/30 p-4">
+          <p className="text-sm text-red-400">{error}</p>
+        </div>
       ) : groups.length === 0 && jobsWithoutAddress.length === 0 ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">No jobs found.</div>
       ) : (

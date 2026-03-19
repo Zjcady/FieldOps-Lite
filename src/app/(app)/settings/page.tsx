@@ -19,6 +19,7 @@ interface CompanyInfo {
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [company, setCompany] = useState<CompanyInfo | null>(null);
 
   const [name, setName] = useState("");
@@ -38,7 +39,7 @@ export default function SettingsPage() {
         setPhone(data.phone || "");
         setAddress(data.address || "");
       } catch {
-        toast.error("Failed to load company settings");
+        setFetchError("Failed to load company settings");
       } finally {
         setLoading(false);
       }
@@ -83,6 +84,16 @@ export default function SettingsPage() {
     );
   }
 
+  if (fetchError) {
+    return (
+      <div className="p-4 md:p-6">
+        <Card className="border-red-500/30 p-4">
+          <p className="text-sm text-red-400">{fetchError}</p>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 md:p-6">
       <div className="mb-4">
@@ -102,10 +113,11 @@ export default function SettingsPage() {
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="company-name" className="text-xs font-medium text-muted-foreground">
               Company Name *
             </label>
             <Input
+              id="company-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Company name"
@@ -114,10 +126,11 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="company-email" className="text-xs font-medium text-muted-foreground">
               Email
             </label>
             <Input
+              id="company-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -126,10 +139,11 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="company-phone" className="text-xs font-medium text-muted-foreground">
               Phone
             </label>
             <Input
+              id="company-phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               placeholder="(555) 123-4567"
@@ -137,10 +151,11 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">
+            <label htmlFor="company-address" className="text-xs font-medium text-muted-foreground">
               Address
             </label>
             <Input
+              id="company-address"
               value={address}
               onChange={(e) => setAddress(e.target.value)}
               placeholder="123 Main St, City, ST 12345"
@@ -152,7 +167,9 @@ export default function SettingsPage() {
             Save Changes
           </Button>
         </Card>
+      </form>
 
+      <div className="mt-4 max-w-lg space-y-4">
         <Card className="p-4 space-y-3">
           <h2 className="text-sm font-semibold">Quick Links</h2>
           <div className="space-y-2">
@@ -183,7 +200,7 @@ export default function SettingsPage() {
             Delete Account
           </Button>
         </Card>
-      </form>
+      </div>
     </div>
   );
 }

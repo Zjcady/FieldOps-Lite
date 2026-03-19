@@ -100,9 +100,10 @@ export default function ReviewRequestsPage() {
                       variant="outline"
                       onClick={() => handleSendReview(job)}
                       disabled={sending === job.id}
+                      aria-label={`Send review request to ${job.customer.name}`}
                     >
                       <Star className="mr-1 h-3.5 w-3.5" />
-                      Send Review Request
+                      {sending === job.id ? "Preparing..." : "Send Review Request"}
                     </Button>
                   )}
                 </div>

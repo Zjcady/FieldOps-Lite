@@ -97,6 +97,7 @@ export default function PropertiesPage() {
               <input
                 type="text"
                 placeholder="Address"
+                aria-label="Property address"
                 value={formAddress}
                 onChange={(e) => setFormAddress(e.target.value)}
                 required
@@ -105,6 +106,7 @@ export default function PropertiesPage() {
               <input
                 type="text"
                 placeholder="City"
+                aria-label="City"
                 value={formCity}
                 onChange={(e) => setFormCity(e.target.value)}
                 required
@@ -113,6 +115,7 @@ export default function PropertiesPage() {
               <input
                 type="text"
                 placeholder="State"
+                aria-label="State"
                 value={formState}
                 onChange={(e) => setFormState(e.target.value)}
                 required
@@ -121,6 +124,7 @@ export default function PropertiesPage() {
               <input
                 type="text"
                 placeholder="ZIP"
+                aria-label="ZIP code"
                 value={formZip}
                 onChange={(e) => setFormZip(e.target.value)}
                 className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
@@ -130,6 +134,7 @@ export default function PropertiesPage() {
               value={formCustomerId}
               onChange={(e) => setFormCustomerId(e.target.value)}
               required
+              aria-label="Customer"
               className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
             >
               <option value="">Select Customer</option>

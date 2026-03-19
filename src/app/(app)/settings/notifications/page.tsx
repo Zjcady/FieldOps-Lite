@@ -31,14 +31,17 @@ const labels: Record<keyof NotificationPrefs, string> = {
 function Toggle({
   checked,
   onChange,
+  "aria-labelledby": ariaLabelledBy,
 }: {
   checked: boolean;
   onChange: (v: boolean) => void;
+  "aria-labelledby"?: string;
 }) {
   return (
     <button
       role="switch"
       aria-checked={checked}
+      aria-labelledby={ariaLabelledBy}
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
         checked ? "bg-primary" : "bg-muted"
@@ -115,8 +118,8 @@ export default function NotificationPreferencesPage() {
             key={key}
             className="flex items-center justify-between rounded-lg px-2 py-3 hover:bg-muted/50"
           >
-            <span className="text-sm">{labels[key]}</span>
-            <Toggle checked={prefs[key]} onChange={(v) => update(key, v)} />
+            <span className="text-sm" id={`label-${key}`}>{labels[key]}</span>
+            <Toggle checked={prefs[key]} onChange={(v) => update(key, v)} aria-labelledby={`label-${key}`} />
           </div>
         ))}
       </Card>

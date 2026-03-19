@@ -247,6 +247,7 @@ export default function PermitsPage() {
         <Card className="mb-4 p-4 space-y-3">
           <Input
             placeholder="Permit type *"
+            aria-label="Permit type"
             value={permitType}
             onChange={(e) => setPermitType(e.target.value)}
             autoFocus
@@ -254,12 +255,14 @@ export default function PermitsPage() {
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Input
               placeholder="Jurisdiction"
+              aria-label="Jurisdiction"
               value={permitJurisdiction}
               onChange={(e) => setPermitJurisdiction(e.target.value)}
             />
             <select
               value={permitJobId}
               onChange={(e) => setPermitJobId(e.target.value)}
+              aria-label="Select job for permit"
               className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <option value="">Select job...</option>
@@ -271,6 +274,7 @@ export default function PermitsPage() {
           <select
             value={permitStatus}
             onChange={(e) => setPermitStatus(e.target.value)}
+            aria-label="Permit status"
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
           >
             {PERMIT_STATUSES.map((s) => (
@@ -297,6 +301,12 @@ export default function PermitsPage() {
         </TabsList>
 
         <TabsContent value="permits" className="mt-4">
+          {safePermits.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+              <FileText className="mb-2 h-8 w-8 opacity-20" />
+              <p className="text-sm">No permits yet. Add one to get started.</p>
+            </Card>
+          ) : (
           <div className="space-y-2">
             {safePermits.map((permit) => (
               <Card key={permit.id} className="flex-row items-center gap-3 p-4">
@@ -316,6 +326,7 @@ export default function PermitsPage() {
               </Card>
             ))}
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="inspections" className="mt-4">
@@ -329,6 +340,7 @@ export default function PermitsPage() {
             <Card className="mb-4 p-4 space-y-3">
               <Input
                 placeholder="Inspection type *"
+                aria-label="Inspection type"
                 value={inspType}
                 onChange={(e) => setInspType(e.target.value)}
                 autoFocus
@@ -337,11 +349,13 @@ export default function PermitsPage() {
                 <Input
                   type="date"
                   placeholder="Scheduled date"
+                  aria-label="Scheduled date"
                   value={inspDate}
                   onChange={(e) => setInspDate(e.target.value)}
                 />
                 <Input
                   placeholder="Inspector name"
+                  aria-label="Inspector name"
                   value={inspInspector}
                   onChange={(e) => setInspInspector(e.target.value)}
                 />
@@ -350,6 +364,7 @@ export default function PermitsPage() {
                 <select
                   value={inspJobId}
                   onChange={(e) => setInspJobId(e.target.value)}
+                  aria-label="Select job for inspection"
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="">Select job...</option>
@@ -360,6 +375,7 @@ export default function PermitsPage() {
                 <select
                   value={inspPermitId}
                   onChange={(e) => setInspPermitId(e.target.value)}
+                  aria-label="Select permit for inspection"
                   className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
                 >
                   <option value="">Select permit...</option>
@@ -380,6 +396,12 @@ export default function PermitsPage() {
             </Card>
           )}
 
+          {safeInspections.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+              <CalendarDays className="mb-2 h-8 w-8 opacity-20" />
+              <p className="text-sm">No inspections scheduled yet.</p>
+            </Card>
+          ) : (
           <div className="space-y-2">
             {safeInspections.map((insp) => (
               <Card key={insp.id} className="flex-row items-center gap-3 p-4">
@@ -401,12 +423,20 @@ export default function PermitsPage() {
               </Card>
             ))}
           </div>
+          )}
         </TabsContent>
 
         <TabsContent value="timeline" className="mt-4">
-          <Card className="p-4">
-            <Timeline items={timelineItems} />
-          </Card>
+          {timelineItems.length === 0 ? (
+            <Card className="flex flex-col items-center justify-center p-8 text-muted-foreground">
+              <CalendarDays className="mb-2 h-8 w-8 opacity-20" />
+              <p className="text-sm">No activity yet.</p>
+            </Card>
+          ) : (
+            <Card className="p-4">
+              <Timeline items={timelineItems} />
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
     </div>

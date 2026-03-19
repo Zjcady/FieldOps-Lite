@@ -82,6 +82,7 @@ export default function TeamPage() {
               <input
                 type="text"
                 placeholder="Name"
+                aria-label="Member name"
                 value={formName}
                 onChange={(e) => setFormName(e.target.value)}
                 required
@@ -90,6 +91,7 @@ export default function TeamPage() {
               <input
                 type="email"
                 placeholder="Email"
+                aria-label="Member email"
                 value={formEmail}
                 onChange={(e) => setFormEmail(e.target.value)}
                 required
@@ -98,6 +100,7 @@ export default function TeamPage() {
               <select
                 value={formRole}
                 onChange={(e) => setFormRole(e.target.value)}
+                aria-label="Member role"
                 className="rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring"
               >
                 {USER_ROLES.map((r) => (

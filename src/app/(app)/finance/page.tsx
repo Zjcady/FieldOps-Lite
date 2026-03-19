@@ -147,6 +147,9 @@ export default function FinancePage() {
         Margin by Category
       </h2>
       <div className="mb-6 space-y-2">
+        {data.margins.byCategory.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">No category data yet.</Card>
+        )}
         {data.margins.byCategory.map((cat) => (
           <Card key={cat.name} className="p-3">
             <div className="flex items-center justify-between">
@@ -174,6 +177,9 @@ export default function FinancePage() {
         Job Margin Detail
       </h2>
       <div className="mb-6 space-y-2">
+        {data.margins.byJob.length === 0 && (
+          <Card className="p-6 text-center text-sm text-muted-foreground">No job margin data yet.</Card>
+        )}
         {data.margins.byJob.map((job) => (
           <Card key={job.title} className="p-3">
             <div className="flex items-start justify-between">

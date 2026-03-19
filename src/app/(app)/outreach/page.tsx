@@ -95,7 +95,7 @@ export default function OutreachPage() {
 
       {showCreate && (
         <Card className="mb-4 p-4 space-y-3">
-          <Input placeholder="Campaign name *" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoFocus />
+          <Input placeholder="Campaign name *" aria-label="Campaign name" value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} autoFocus />
 
           <div>
             <label className="mb-1 block text-xs text-muted-foreground">Template</label>
@@ -115,9 +115,10 @@ export default function OutreachPage() {
             </div>
           </div>
 
-          <Input placeholder="Email subject *" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
+          <Input placeholder="Email subject *" aria-label="Email subject" value={form.subject} onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))} />
           <textarea
             placeholder="Email body..."
+            aria-label="Email body"
             className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
             value={form.body}
             onChange={(e) => setForm((f) => ({ ...f, body: e.target.value }))}
@@ -187,7 +188,9 @@ export default function OutreachPage() {
               {c.status === "draft" && (
                 <div className="mt-2 flex gap-2">
                   <Button size="xs" variant="outline" onClick={() => setPreviewCampaign(c)}>Preview</Button>
-                  <Button size="xs" onClick={() => handleSend(c.id)}>Send</Button>
+                  <Button size="xs" onClick={() => handleSend(c.id)} disabled={sending === c.id}>
+                    {sending === c.id ? "Sending..." : "Send"}
+                  </Button>
                 </div>
               )}
               <div className="mt-2 text-[11px] text-muted-foreground">
@@ -199,11 +202,11 @@ export default function OutreachPage() {
       )}
 
       {previewCampaign && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setPreviewCampaign(null)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="dialog" aria-label="Email preview" onClick={() => setPreviewCampaign(null)} onKeyDown={(e) => { if (e.key === "Escape") setPreviewCampaign(null); }}>
           <Card className="max-h-[80vh] w-full max-w-md overflow-y-auto p-6" onClick={(e) => e.stopPropagation()}>
             <div className="mb-4 flex items-center justify-between">
               <h3 className="text-sm font-semibold">Email Preview</h3>
-              <button onClick={() => setPreviewCampaign(null)} className="text-muted-foreground hover:text-foreground">✕</button>
+              <button onClick={() => setPreviewCampaign(null)} aria-label="Close preview" className="text-muted-foreground hover:text-foreground">✕</button>
             </div>
             <div className="space-y-3 rounded-lg border border-border p-4">
               <div className="text-xs text-muted-foreground">Subject:</div>
