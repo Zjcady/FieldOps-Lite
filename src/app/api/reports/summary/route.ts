@@ -20,11 +20,11 @@ export async function GET() {
     }),
   ]);
 
-  return NextResponse.json({
+  return withRequestId(NextResponse.json({
     activeJobs,
     pendingPermits,
     totalRevenue: totalRevenue._sum.total ?? 0,
     crewsOut,
     recentActivity,
-  }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } });
+  }, { headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" } }));
 }
