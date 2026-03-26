@@ -13,6 +13,7 @@ export async function updateSession(request: NextRequest) {
       pathname.startsWith("/login") ||
       pathname.startsWith("/signup") ||
       pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/setup") ||
       pathname.startsWith("/auth/");
 
     const hasDevCookie = request.cookies.has("fieldops_dev_auth");
@@ -66,6 +67,7 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
     pathname.startsWith("/forgot-password") ||
+    pathname.startsWith("/setup") ||
     pathname.startsWith("/auth/");
 
   // If not authenticated and trying to access protected route, redirect to login

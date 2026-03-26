@@ -24,6 +24,9 @@ const setupSchema = z.object({
   email: z.string().email().max(255),
   name: z.string().min(1).max(255),
   companyName: z.string().min(1).max(255),
+  companyPhone: z.string().max(50).optional(),
+  companyAddress: z.string().max(500).optional(),
+  services: z.array(z.string().max(100)).max(20).optional(),
 });
 
 /**
@@ -54,7 +57,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { authId, email, name, companyName } = parsed.data;
+  const { authId, email, name, companyName, companyPhone, companyAddress } = parsed.data;
 
   try {
     // Check if user already exists
@@ -85,6 +88,8 @@ export async function POST(request: NextRequest) {
           name: companyName,
           slug,
           email,
+          phone: companyPhone || null,
+          address: companyAddress || null,
         },
       });
 

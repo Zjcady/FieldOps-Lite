@@ -18,6 +18,15 @@ export default async function AppLayout({
   const user = await getUser();
 
   if (!user) {
+    // Check if they have a Supabase session but no Prisma user (first-time setup)
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      const { createClient } = await import("@/lib/supabase/server");
+      const supabase = await createClient();
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (authUser) {
+        redirect("/setup");
+      }
+    }
     redirect("/login");
   }
 
