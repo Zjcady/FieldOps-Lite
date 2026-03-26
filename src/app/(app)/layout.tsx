@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/layout/app-sidebar";
 import { Header } from "@/components/layout/header";
@@ -15,6 +16,10 @@ export default async function AppLayout({
   children: React.ReactNode;
 }) {
   const user = await getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
 
   return (
     <UserProvider user={user}>

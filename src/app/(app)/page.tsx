@@ -1,3 +1,4 @@
+import { redirect } from "next/navigation";
 import prisma from "@/lib/prisma";
 import { formatCurrency } from "@/lib/format";
 import { getUser } from "@/lib/auth/get-user";
@@ -10,17 +11,15 @@ export default async function DashboardPage() {
   const companyId = user?.companyId;
 
   if (!companyId) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Please sign in to view your dashboard.</p>
-      </div>
-    );
+    redirect("/login");
   }
 
   const now = new Date();
+  /* eslint-disable react-hooks/purity -- server component, not a hook */
   const twoWeeksAgo = new Date(Date.now() - 14 * 86400000);
   const oneWeekAgo = new Date(Date.now() - 7 * 86400000);
   const oneWeekFromNow = new Date(Date.now() + 7 * 86400000);
+  /* eslint-enable react-hooks/purity */
   const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
@@ -106,7 +105,7 @@ export default async function DashboardPage() {
     expiringPermits: expiringPermits.map((p) => ({
       id: p.id,
       type: p.type,
-      daysLeft: p.expiryDate ? Math.ceil((p.expiryDate.getTime() - Date.now()) / 86400000) : 0,
+      daysLeft: p.expiryDate ? Math.ceil((p.expiryDate.getTime() - now.getTime()) / 86400000) : 0,
       jobTitle: p.job?.title ?? "Unknown job",
     })),
     recentPassedInspections: recentPassedInspections.map((i) => ({
