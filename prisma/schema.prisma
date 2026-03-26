@@ -29,7 +29,9 @@ model Company {
   vendors        Vendor[]
   invoices       Invoice[]
   timeEntries    TimeEntry[]
-  emailCampaigns EmailCampaign[]
+  emailCampaigns   EmailCampaign[]
+  laborRates       LaborRate[]
+  pricingTemplates PricingTemplate[]
 }
 
 model User {
@@ -50,6 +52,7 @@ model User {
   notes        Note[]
   activityLogs ActivityLog[]
   timeEntries  TimeEntry[]
+  checkins     Checkin[]
 
   @@index([companyId])
   @@index([authId])
@@ -169,6 +172,7 @@ model Job {
   invoices           Invoice[]
   timeEntries        TimeEntry[]
   recurringSchedule  RecurringSchedule?
+  checkins           Checkin[]
 
   @@index([companyId])
   @@index([customerId])
@@ -198,6 +202,26 @@ model Task {
   @@index([jobId])
 }
 
+model Checkin {
+  id        String   @id @default(uuid())
+  jobId     String
+  userId    String
+  type      String   // "checkin" | "checkout"
+  lat       Float?
+  lng       Float?
+  verified  Boolean  @default(false)
+  distance  Float?   // meters from job site
+  photoId   String?  @unique
+  createdAt DateTime @default(now())
+
+  job   Job    @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user  User   @relation(fields: [userId], references: [id])
+  photo Photo? @relation(fields: [photoId], references: [id])
+
+  @@index([jobId])
+  @@index([userId])
+}
+
 model Photo {
   id         String   @id @default(uuid())
   jobId      String
@@ -209,9 +233,44 @@ model Photo {
   lng        Float?
   createdAt  DateTime @default(now())
 
-  job Job @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  job     Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  checkin Checkin?
 
   @@index([jobId])
+}
+
+model LaborRate {
+  id          String   @id @default(uuid())
+  companyId   String
+  category    String
+  ratePerHour Decimal  @db.Decimal(12, 2)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@unique([companyId, category])
+  @@index([companyId])
+}
+
+model PricingTemplate {
+  id                  String   @id @default(uuid())
+  companyId           String
+  name                String
+  category            String
+  unit                String   // "sqft" | "linft" | "each" | "day" | "hour"
+  ratePerUnit         Decimal  @db.Decimal(12, 2)
+  materialCostPerUnit Decimal  @default(0) @db.Decimal(12, 2)
+  laborHoursPerUnit   Float    @default(0)
+  description         String?
+  isActive            Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
+  @@index([companyId, category])
 }
 
 model Note {

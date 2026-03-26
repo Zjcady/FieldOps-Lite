@@ -15,53 +15,59 @@ interface UseFetchReturn<T> {
 }
 
 /**
- * Shared data fetching hook with error handling (#15-22, #46).
- * Handles loading, error states, and prevents state updates on unmounted components.
+ * Shared data fetching hook with error handling.
+ * Uses AbortController to cancel stale requests on URL change or unmount.
  */
 export function useFetch<T>(url: string | null, options?: UseFetchOptions): UseFetchReturn<T> {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(!options?.manual);
   const [error, setError] = useState<string | null>(null);
-  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!url) return;
+
+    // Abort any in-flight request
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal: controller.signal });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
         throw new Error(err.error || `Request failed (${res.status})`);
       }
       const json = await res.json();
-      if (mountedRef.current) {
+      if (!controller.signal.aborted) {
         setData(json);
       }
     } catch (e) {
-      if (mountedRef.current) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (!controller.signal.aborted) {
         setError(e instanceof Error ? e.message : "An error occurred");
       }
     } finally {
-      if (mountedRef.current) {
+      if (!controller.signal.aborted) {
         setLoading(false);
       }
     }
   }, [url]);
 
   useEffect(() => {
-    mountedRef.current = true;
     if (!options?.manual) {
       fetchData();
     }
-    return () => { mountedRef.current = false; };
+    return () => { abortRef.current?.abort(); };
   }, [fetchData, options?.manual]);
 
   return { data, loading, error, refetch: fetchData };
 }
 
 /**
- * Fetch multiple URLs in parallel with shared error handling (#16).
+ * Fetch multiple URLs in parallel with shared error handling.
  */
 export function useFetchAll<T extends unknown[]>(
   urls: string[]
@@ -71,28 +77,33 @@ export function useFetchAll<T extends unknown[]>(
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const mountedRef = useRef(true);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchAll = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setError(null);
     try {
-      const responses = await Promise.all(urls.map((u) => fetch(u)));
+      const responses = await Promise.all(urls.map((u) => fetch(u, { signal: controller.signal })));
       const results = await Promise.all(
         responses.map(async (r) => {
           if (!r.ok) throw new Error(`Request to ${r.url} failed (${r.status})`);
           return r.json();
         })
       );
-      if (mountedRef.current) {
+      if (!controller.signal.aborted) {
         setData(results as { [K in keyof T]: T[K] | null });
       }
     } catch (e) {
-      if (mountedRef.current) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      if (!controller.signal.aborted) {
         setError(e instanceof Error ? e.message : "An error occurred");
       }
     } finally {
-      if (mountedRef.current) {
+      if (!controller.signal.aborted) {
         setLoading(false);
       }
     }
@@ -100,9 +111,8 @@ export function useFetchAll<T extends unknown[]>(
   }, [urls.join(",")]);
 
   useEffect(() => {
-    mountedRef.current = true;
     fetchAll();
-    return () => { mountedRef.current = false; };
+    return () => { abortRef.current?.abort(); };
   }, [fetchAll]);
 
   return { data, loading, error, refetch: fetchAll };

@@ -39,6 +39,13 @@ export async function POST(request: NextRequest) {
     return apiError("address, city, state, and customerId are required", 400);
   }
 
+  // Verify customerId belongs to this company
+  const customer = await prisma.customer.findUnique({
+    where: { id: body.customerId, companyId: user.companyId },
+    select: { id: true },
+  });
+  if (!customer) return apiError("Customer not found", 404);
+
   const property = await prisma.property.create({
     data: {
       companyId: user.companyId,

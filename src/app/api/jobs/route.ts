@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, getPagination, getSafeSearch, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, getPagination, getSafeSearch, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
 import { jobCreateSchema } from "@/lib/validations/job";
 
 export async function GET(request: NextRequest) {
@@ -65,10 +65,24 @@ export async function POST(request: NextRequest) {
   const [data, valErr] = await validateBody(request, jobCreateSchema);
   if (valErr) return valErr;
 
+  // Verify all FK references belong to this company
+  if (data.customerId) {
+    const c = await prisma.customer.findUnique({ where: { id: data.customerId, companyId: user.companyId }, select: { id: true } });
+    if (!c) return apiError("Customer not found", 404);
+  }
+  if (data.crewId) {
+    const cr = await prisma.crew.findUnique({ where: { id: data.crewId, companyId: user.companyId }, select: { id: true } });
+    if (!cr) return apiError("Crew not found", 404);
+  }
+  if (data.propertyId) {
+    const p = await prisma.property.findUnique({ where: { id: data.propertyId, companyId: user.companyId }, select: { id: true } });
+    if (!p) return apiError("Property not found", 404);
+  }
+
   const year = new Date().getFullYear();
   const result = await prisma.$transaction(async (tx) => {
     // Lock-free unique job number using random suffix
-    const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+    const rand = crypto.randomUUID().replace(/-/g, "").substring(0, 8).toUpperCase();
     const jobNumber = `JOB-${year}-${rand}`;
 
     const job = await tx.job.create({

@@ -100,6 +100,41 @@ export default function LoginPage() {
     setLoading(false);
   };
 
+  // Dev mode: show simple email-only login (no password needed)
+  if (!isSupabaseConfigured) {
+    return (
+      <Card className="w-full max-w-sm p-6">
+        <div className="mb-6 text-center">
+          <div className="mb-3 flex items-center justify-center gap-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-blue-600 shadow-md shadow-primary/25">
+              <Triangle className="h-4.5 w-4.5 text-white" fill="white" />
+            </div>
+          </div>
+          <h1 className="text-lg font-semibold">{APP_CONFIG.name}</h1>
+          <p className="text-sm text-muted-foreground">Sign in with your email</p>
+        </div>
+        <form onSubmit={handlePasswordLogin} className="space-y-3">
+          <Input
+            type="email"
+            placeholder="Email address"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            autoFocus
+          />
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Sign In
+          </Button>
+        </form>
+        <div className="mt-4 text-center text-sm text-muted-foreground">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-primary hover:underline">Sign up</Link>
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full max-w-sm p-6">
       <div className="mb-6 text-center">
@@ -194,13 +229,12 @@ export default function LoginPage() {
                 {mode === "password" ? "Use magic link" : "Use password"}
               </button>
               <span className="text-muted-foreground">·</span>
-              <button
-                type="button"
-                onClick={() => setMode("forgot")}
+              <Link
+                href="/forgot-password"
                 className="text-muted-foreground hover:text-foreground"
               >
                 Forgot password?
-              </button>
+              </Link>
             </div>
           </>
         )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/shared/status-badge";
@@ -197,35 +197,7 @@ export default function CrewPage() {
         })}
       </div>
 
-      {/* TODO: Replace placeholder utilization data with real API call to /api/crews/[id]/utilization */}
-      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-        Monthly Utilization
-      </h2>
-      <div className="mb-6 space-y-3">
-        {(crews ?? []).map((crew) => {
-          // TODO: Fetch real utilization data from /api/crews/${crew.id}/utilization
-          // Use crew index as deterministic seed for placeholder data
-          const placeholderHours = ((crew.name.charCodeAt(0) * 7 + 42) % 140) + 20;
-          const maxHours = 160;
-          const pct = (placeholderHours / maxHours) * 100;
-          const barColor = pct > 75 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
-
-          return (
-            <Card key={`util-${crew.id}`} className="p-3">
-              <div className="mb-1.5 flex items-center justify-between">
-                <span className="text-sm font-medium">{crew.name}</span>
-                <span className="text-xs text-muted-foreground">{placeholderHours}h / {maxHours}h</span>
-              </div>
-              <div className="h-2 overflow-hidden rounded-full bg-border">
-                <div
-                  className={`h-full rounded-full ${barColor}`}
-                  style={{ width: `${Math.min(pct, 100)}%` }}
-                />
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+      <CrewUtilization crews={crews ?? []} />
 
       <SchedulingConflicts />
 
@@ -267,5 +239,57 @@ export default function CrewPage() {
         </>
       )}
     </div>
+  );
+}
+
+function CrewUtilization({ crews }: { crews: Crew[] }) {
+  const [utilization, setUtilization] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    if (crews.length === 0) return;
+    const controller = new AbortController();
+    crews.forEach((crew) => {
+      fetch(`/api/crews/${crew.id}/utilization`, { signal: controller.signal })
+        .then((r) => r.ok ? r.json() : null)
+        .then((data) => {
+          if (data && !controller.signal.aborted) {
+            setUtilization((prev) => ({ ...prev, [crew.id]: data.totalHours ?? 0 }));
+          }
+        })
+        .catch(() => {});
+    });
+    return () => controller.abort();
+  }, [crews]);
+
+  const maxHours = 160;
+
+  return (
+    <>
+      <h2 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+        Monthly Utilization
+      </h2>
+      <div className="mb-6 space-y-3">
+        {crews.map((crew) => {
+          const hours = utilization[crew.id] ?? 0;
+          const pct = maxHours > 0 ? (hours / maxHours) * 100 : 0;
+          const barColor = pct > 75 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500";
+
+          return (
+            <Card key={`util-${crew.id}`} className="p-3">
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-sm font-medium">{crew.name}</span>
+                <span className="text-xs text-muted-foreground">{Math.round(hours)}h / {maxHours}h</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-border">
+                <div
+                  className={`h-full rounded-full ${barColor}`}
+                  style={{ width: `${Math.min(pct, 100)}%` }}
+                />
+              </div>
+            </Card>
+          );
+        })}
+      </div>
+    </>
   );
 }

@@ -37,14 +37,16 @@ export default function MapPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/jobs?take=500")
+    const controller = new AbortController();
+    fetch("/api/jobs?take=200", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to load jobs (${r.status})`);
         return r.json();
       })
-      .then((data) => setJobs(Array.isArray(data) ? data : []))
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load jobs"))
-      .finally(() => setLoading(false));
+      .then((data) => { if (!controller.signal.aborted) setJobs(Array.isArray(data) ? data : []); })
+      .catch((e) => { if (e.name !== "AbortError" && !controller.signal.aborted) setError(e instanceof Error ? e.message : "Failed to load jobs"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   // Group jobs by parsed city/area

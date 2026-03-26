@@ -94,4 +94,24 @@ export const checkinSchema = z.object({
   type: z.enum(["checkin", "checkout"]),
   lat: z.number().min(-90).max(90).optional(),
   lng: z.number().min(-180).max(180).optional(),
+  photoId: z.string().uuid().optional(),
+});
+
+// ── Labor Rate schemas ──────────────────────────────────────────────────
+export const laborRateSchema = z.object({
+  category: z.string().min(1),
+  ratePerHour: z.coerce.number().min(0),
+});
+
+export const laborRateArraySchema = z.array(laborRateSchema);
+
+// ── Pricing Template schemas ────────────────────────────────────────────
+export const pricingTemplateSchema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.string().min(1),
+  unit: z.enum(["sqft", "linft", "each", "day", "hour"]),
+  ratePerUnit: z.coerce.number().min(0),
+  materialCostPerUnit: z.coerce.number().min(0).default(0),
+  laborHoursPerUnit: z.coerce.number().min(0).default(0),
+  description: z.string().max(500).optional(),
 });

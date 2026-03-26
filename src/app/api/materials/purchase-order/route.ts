@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, parseBody, apiError } from "@/lib/api-utils";
+import { authenticateApi, parseBody, apiError, requireWrite } from "@/lib/api-utils";
 
 export async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
 
   const [body, parseErr] = await parseBody<{
     vendorId?: string;

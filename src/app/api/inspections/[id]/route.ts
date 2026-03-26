@@ -22,7 +22,7 @@ export async function PUT(
   if (!existing) return apiError("Inspection not found", 404);
 
   const inspection = await prisma.inspection.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       type: body.type ?? existing.type,
       status: body.status ?? existing.status,

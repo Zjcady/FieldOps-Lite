@@ -8,7 +8,8 @@ import { JOB_CATEGORIES, JOB_PRIORITIES } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Loader2, RotateCcw, X } from "lucide-react";
+import { Loader2, RotateCcw, X, ChevronDown } from "lucide-react";
+import { CostCalculator } from "@/components/jobs/cost-calculator";
 
 interface Customer {
   id: string;
@@ -34,6 +35,7 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
   const [crews, setCrews] = useState<Crew[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [showDraftBanner, setShowDraftBanner] = useState(false);
+  const [showCalculator, setShowCalculator] = useState(false);
   const draftRef = useRef<Partial<JobCreateInput> | null>(null);
 
   const {
@@ -42,6 +44,7 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
     watch,
     reset,
     formState: { errors },
+    setValue,
   } = useForm<JobCreateInput>({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(jobCreateSchema) as any,
@@ -96,13 +99,14 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
   }, [watch, defaultValues]);
 
   useEffect(() => {
+    const controller = new AbortController();
     Promise.all([
-      fetch("/api/customers").then((r) => r.json()),
-      fetch("/api/crews").then((r) => r.json()),
+      fetch("/api/customers", { signal: controller.signal }).then((r) => r.ok ? r.json() : []),
+      fetch("/api/crews", { signal: controller.signal }).then((r) => r.ok ? r.json() : []),
     ]).then(([c, cr]) => {
-      setCustomers(c);
-      setCrews(cr);
-    });
+      if (!controller.signal.aborted) { setCustomers(c); setCrews(cr); }
+    }).catch(() => {});
+    return () => controller.abort();
   }, []);
 
   const handleFormSubmit = async (data: JobCreateInput) => {
@@ -246,6 +250,29 @@ export function JobForm({ defaultValues, onSubmit, submitLabel = "Create Job" }:
         </div>
       </Card>
       </fieldset>
+
+      {/* Cost Calculator */}
+      <Card className="p-4">
+        <button
+          type="button"
+          onClick={() => setShowCalculator(!showCalculator)}
+          className="flex w-full items-center justify-between"
+        >
+          <h3 className="text-xs font-semibold uppercase text-muted-foreground">Cost Calculator</h3>
+          <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${showCalculator ? "rotate-180" : ""}`} />
+        </button>
+        {showCalculator && (
+          <div className="mt-3">
+            <CostCalculator
+              category={watch("category")}
+              onApply={({ estimatedCost, estimatedHours }) => {
+                setValue("estimatedCost", estimatedCost);
+                setValue("estimatedHours", estimatedHours);
+              }}
+            />
+          </div>
+        )}
+      </Card>
 
       <Button type="submit" className="w-full" disabled={submitting}>
         {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

@@ -42,10 +42,11 @@ export async function POST(
     return apiError("Message content too long (max 5000 characters)", 400);
   }
 
+  // Force senderType to "customer" — portal users cannot impersonate contractors
   const message = await prisma.portalMessage.create({
     data: {
       customerId: customer.id,
-      senderType: body.senderType,
+      senderType: "customer",
       content: body.content,
     },
   });

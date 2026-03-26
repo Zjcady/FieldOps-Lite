@@ -43,20 +43,23 @@ export default function CalendarPage() {
   const [month, setMonth] = useState(today.getMonth());
 
   useEffect(() => {
+    const controller = new AbortController();
     const from = `${year}-${String(month + 1).padStart(2, "0")}-01`;
     const lastDay = getDaysInMonth(year, month);
     const to = `${year}-${String(month + 1).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
 
-    setLoading(true);
-    setError(null);
-    fetch(`/api/jobs?from=${from}&to=${to}&take=200`)
+    setLoading(true); // eslint-disable-line react-hooks/set-state-in-effect
+    setError(null);  
+    fetch(`/api/jobs?from=${from}&to=${to}&take=200`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error("Failed to load jobs");
         return r.json();
       })
-      .then((data) => setJobs(Array.isArray(data) ? data : []))
-      .catch((err) => { setJobs([]); setError(err.message || "Failed to load jobs"); })
-      .finally(() => setLoading(false));
+      .then((data) => { if (!controller.signal.aborted) setJobs(Array.isArray(data) ? data : []); })
+      .catch((err) => { if (err.name !== "AbortError" && !controller.signal.aborted) { setJobs([]); setError(err.message || "Failed to load jobs"); } })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+
+    return () => controller.abort();
   }, [year, month]);
 
   const daysInMonth = getDaysInMonth(year, month);

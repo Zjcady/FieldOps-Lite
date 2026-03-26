@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, apiSuccess, requireWrite, parseBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, apiSuccess, requireAdmin, parseBody } from "@/lib/api-utils";
 
 export async function GET() {
   const [user, errorRes] = await authenticateApi();
@@ -20,8 +20,8 @@ export async function PUT(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
-  const writeErr = requireWrite(user);
-  if (writeErr) return writeErr;
+  const adminErr = requireAdmin(user);
+  if (adminErr) return adminErr;
 
   const [body, parseErr] = await parseBody<{
     name?: string;

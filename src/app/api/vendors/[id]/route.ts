@@ -44,7 +44,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   if (parseErr) return parseErr;
 
   const vendor = await prisma.vendor.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       ...(body.name !== undefined && { name: body.name.trim() }),
       ...(body.contact !== undefined && { contact: body.contact || null }),
@@ -76,6 +76,6 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     return apiError("Cannot delete vendor with linked materials", 400);
   }
 
-  await prisma.vendor.delete({ where: { id } });
+  await prisma.vendor.delete({ where: { id, companyId: user.companyId } });
   return NextResponse.json({ success: true });
 }

@@ -20,10 +20,10 @@ export async function POST(
 
   if (!customer) return apiError("Customer not found", 404);
 
-  const portalToken = crypto.randomUUID().replace(/-/g, "").substring(0, 12);
+  const portalToken = crypto.randomUUID();
 
   await prisma.customer.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: { portalToken },
   });
 

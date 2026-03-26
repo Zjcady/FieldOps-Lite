@@ -24,6 +24,19 @@ export async function POST(
   });
   if (!crew) return apiError("Crew not found", 404);
 
+  // Verify the target user belongs to the same company
+  const targetUser = await prisma.user.findUnique({
+    where: { id: body.userId, companyId: user.companyId },
+    select: { id: true },
+  });
+  if (!targetUser) return apiError("User not found in your company", 404);
+
+  // Check for existing membership
+  const existing = await prisma.crewMember.findUnique({
+    where: { crewId_userId: { crewId, userId: body.userId } },
+  });
+  if (existing) return apiError("User is already a member of this crew", 409);
+
   const member = await prisma.crewMember.create({
     data: {
       crewId,
@@ -60,11 +73,15 @@ export async function DELETE(
   });
   if (!crew) return apiError("Crew not found", 404);
 
-  await prisma.crewMember.delete({
-    where: {
-      crewId_userId: { crewId, userId: body.userId },
-    },
-  });
+  try {
+    await prisma.crewMember.delete({
+      where: {
+        crewId_userId: { crewId, userId: body.userId },
+      },
+    });
+  } catch {
+    return apiError("Member not found in this crew", 404);
+  }
 
   return NextResponse.json({ success: true });
 }

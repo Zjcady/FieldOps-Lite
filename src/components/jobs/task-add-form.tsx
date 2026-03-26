@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 
 interface TaskAddFormProps {
   jobId: string;
@@ -28,6 +29,8 @@ export function TaskAddForm({ jobId, onTaskAdded }: TaskAddFormProps) {
       const task = await res.json();
       onTaskAdded(task);
       setTitle("");
+    } else {
+      toast.error("Failed to add task");
     }
     setAdding(false);
   };

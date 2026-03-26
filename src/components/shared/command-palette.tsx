@@ -13,6 +13,15 @@ const COMMANDS = [
   { label: "Reports", href: "/reports", keywords: ["analytics", "stats"] },
   { label: "Import CSV", href: "/jobs/import", keywords: ["upload", "bulk"] },
   { label: "Templates", href: "/jobs/templates", keywords: ["presets"] },
+  { label: "Permits", href: "/permits", keywords: ["license", "inspection"] },
+  { label: "Vendors", href: "/vendors", keywords: ["suppliers", "materials"] },
+  { label: "Materials", href: "/materials", keywords: ["supplies", "inventory"] },
+  { label: "Invoices", href: "/invoices", keywords: ["billing", "payments"] },
+  { label: "Finance", href: "/finance", keywords: ["revenue", "money", "profit"] },
+  { label: "Team", href: "/team", keywords: ["users", "members", "invite"] },
+  { label: "Map", href: "/map", keywords: ["location", "area", "geography"] },
+  { label: "Outreach", href: "/outreach", keywords: ["email", "campaigns", "marketing"] },
+  { label: "Activity", href: "/activity", keywords: ["log", "history", "feed"] },
 ];
 
 export function CommandPalette() {
@@ -74,9 +83,8 @@ export function CommandPalette() {
   }, [open]);
 
   // Reset selected index when filter changes
-  useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setSelectedIndex(0); }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {

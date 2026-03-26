@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { canTransition, type JobStatus } from "@/lib/job-state-machine";
-import { authenticateApi, apiError, validateBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, validateBody, requireWrite } from "@/lib/api-utils";
 import { jobStatusSchema } from "@/lib/validations/job";
 
 export async function PATCH(
@@ -10,6 +10,8 @@ export async function PATCH(
 ) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
 
   const [data, valErr] = await validateBody(request, jobStatusSchema);
   if (valErr) return valErr;
@@ -30,7 +32,7 @@ export async function PATCH(
 
   const updated = await prisma.$transaction(async (tx) => {
     const updatedJob = await tx.job.update({
-      where: { id },
+      where: { id, companyId: user.companyId },
       data: updateData,
       include: { customer: true, crew: true },
     });

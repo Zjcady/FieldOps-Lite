@@ -116,12 +116,20 @@ export async function GET(
   </table>
 
   ${invoice.notes ? `<div class="notes"><strong>Notes:</strong> ${escapeHtml(invoice.notes)}</div>` : ""}
+
+  <div class="no-print" style="margin-top:32px;text-align:center;">
+    <button onclick="window.print()" style="padding:10px 24px;background:#2563eb;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer;">
+      Print / Save as PDF
+    </button>
+  </div>
+  <style>.no-print { } @media print { .no-print { display: none !important; } }</style>
 </body>
 </html>`;
 
   return new NextResponse(html, {
     headers: {
       "Content-Type": "text/html; charset=utf-8",
+      "Content-Disposition": `inline; filename="${invoice.invoiceNumber}.html"`,
     },
   });
 }

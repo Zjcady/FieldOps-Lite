@@ -38,12 +38,19 @@ export async function POST(
   const [body, valErr] = await validateBody(request, taskCreateSchema);
   if (valErr) return valErr;
 
+  const lastTask = await prisma.task.findFirst({
+    where: { jobId: id },
+    orderBy: { sortOrder: "desc" },
+    select: { sortOrder: true },
+  });
+  const nextSortOrder = (lastTask?.sortOrder ?? -1) + 1;
+
   const task = await prisma.task.create({
     data: {
       jobId: id,
       title: body.title,
       description: body.description || null,
-      sortOrder: Date.now(),
+      sortOrder: nextSortOrder,
     },
   });
 

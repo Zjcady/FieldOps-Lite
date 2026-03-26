@@ -39,11 +39,13 @@ interface JobDetail {
   inspections: { id: string; type: string; status: string; scheduledDate: string | null; inspector: string | null }[];
   materials: { id: string; name: string; quantity: number; unit: string; unitCost: number | null; totalCost: number | null; status: string; vendor: { name: string } | null }[];
   activityLogs: ActivityLog[];
+  checkins: CheckinEntry[];
 }
 
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { data: job, loading, error } = useFetch<JobDetail>(`/api/jobs/${id}`);
+  const { data: job, loading, error, refetch } = useFetch<JobDetail>(`/api/jobs/${id}`);
+  const { data: laborRates } = useFetch<Array<{ category: string; ratePerHour: number }>>("/api/settings/labor-rates");
   const [localJob, setLocalJob] = useState<Partial<JobDetail>>({});
   const [changingStatus, setChangingStatus] = useState<string | null>(null); // #23: loading state
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
@@ -372,16 +374,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </div>
           </Card>
 
+          {/* Crew Check-In */}
+          <CrewCheckinCard jobId={id} checkins={merged.checkins ?? []} onCheckin={refetch} />
+
           {/* Cost Breakdown */}
           <Card className="p-4">
             <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Cost Breakdown</h3>
             {(() => {
-              const laborCost = (merged.actualHours ?? 0) * 45;
+              const rate = laborRates?.find((r) => r.category === merged.category)?.ratePerHour ?? 45;
+              const laborCost = (merged.actualHours ?? 0) * rate;
               const materialsCost = (merged.materials ?? []).reduce((sum, m) => sum + (m.totalCost ?? 0), 0);
               const totalActual = laborCost + materialsCost;
               return (
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between"><span className="text-muted-foreground">Labor ({merged.actualHours ?? 0} hrs x $45/hr)</span><span>{formatCurrency(laborCost)}</span></div>
+                  <div className="flex justify-between"><span className="text-muted-foreground">Labor ({merged.actualHours ?? 0} hrs x ${rate}/hr)</span><span>{formatCurrency(laborCost)}</span></div>
                   <div className="flex justify-between"><span className="text-muted-foreground">Materials</span><span>{formatCurrency(materialsCost)}</span></div>
                   <div className="border-t border-border pt-2 flex justify-between font-medium"><span>Total Actual</span><span>{formatCurrency(totalActual)}</span></div>
                   {merged.estimatedCost != null && (
@@ -408,7 +414,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           {/* Weather Note — show if job is scheduled within 7 days */}
           {merged.scheduledDate && (() => {
             const scheduled = new Date(merged.scheduledDate);
-            const daysUntil = Math.ceil((scheduled.getTime() - Date.now()) / 86400000);
+            const now = typeof window !== "undefined" ? Date.now() : 0; // eslint-disable-line react-hooks/purity
+            const daysUntil = Math.ceil((scheduled.getTime() - now) / 86400000);
             if (daysUntil >= 0 && daysUntil <= 7) {
               return (
                 <Card className="p-4">
@@ -663,5 +670,98 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         }
       `}</style>
     </div>
+  );
+}
+
+interface CheckinEntry {
+  id: string;
+  type: string;
+  lat: number | null;
+  lng: number | null;
+  verified: boolean;
+  distance: number | null;
+  createdAt: string;
+  user: { name: string } | null;
+  photo: { id: string; url: string } | null;
+}
+
+function CrewCheckinCard({ jobId, checkins, onCheckin }: { jobId: string; checkins: CheckinEntry[]; onCheckin: () => void }) {
+  const [loading, setLoading] = useState(false);
+
+  // Determine if there's an open checkin (checkin without a subsequent checkout)
+  const lastCheckin = checkins.find((c) => c.type === "checkin");
+  const lastCheckout = checkins.find((c) => c.type === "checkout");
+  const isCheckedIn = lastCheckin && (!lastCheckout || new Date(lastCheckin.createdAt) > new Date(lastCheckout.createdAt));
+
+  const handleCheckin = async (type: "checkin" | "checkout") => {
+    setLoading(true);
+    try {
+      const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+        navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 10000, enableHighAccuracy: true });
+      }).catch(() => null);
+
+      const res = await fetch(`/api/jobs/${jobId}/checkins`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type,
+          lat: pos?.coords.latitude,
+          lng: pos?.coords.longitude,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.verified) {
+          toast.success(`${type === "checkin" ? "Checked in" : "Checked out"} — On-site verified`);
+        } else if (data.distance != null) {
+          toast.warning(`${type === "checkin" ? "Checked in" : "Checked out"} — ${data.distance}m from job site`);
+        } else {
+          toast.success(type === "checkin" ? "Checked in" : "Checked out");
+        }
+        onCheckin();
+      } else {
+        toast.error("Check-in failed");
+      }
+    } catch {
+      toast.error("GPS unavailable");
+    }
+    setLoading(false);
+  };
+
+  const formatTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+
+  return (
+    <Card className="p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Crew Check-In</h3>
+      <div className="mb-3 flex gap-2">
+        {!isCheckedIn ? (
+          <Button size="sm" onClick={() => handleCheckin("checkin")} disabled={loading}>
+            {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-1 h-3.5 w-3.5" />}
+            Check In
+          </Button>
+        ) : (
+          <Button size="sm" variant="outline" onClick={() => handleCheckin("checkout")} disabled={loading}>
+            {loading ? <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" /> : <MapPin className="mr-1 h-3.5 w-3.5" />}
+            Check Out
+          </Button>
+        )}
+      </div>
+
+      {checkins.length > 0 && (
+        <div className="space-y-1.5">
+          {checkins.slice(0, 10).map((c) => (
+            <div key={c.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span className={`inline-block h-2 w-2 rounded-full ${c.type === "checkin" ? "bg-green-500" : "bg-amber-500"}`} />
+              <span className="font-medium text-foreground">{c.user?.name}</span>
+              <span>{c.type === "checkin" ? "checked in" : "checked out"}</span>
+              <span>{formatTime(c.createdAt)}</span>
+              {c.verified && <span className="rounded bg-green-500/20 px-1 text-[10px] font-semibold text-green-400">On-Site ✓</span>}
+              {!c.verified && c.distance != null && <span className="rounded bg-amber-500/20 px-1 text-[10px] font-semibold text-amber-400">{c.distance}m away</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </Card>
   );
 }

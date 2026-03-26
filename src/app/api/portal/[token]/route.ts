@@ -63,7 +63,15 @@ export async function GET(
     return NextResponse.json({ error: "Portal not found" }, { status: 404 });
   }
 
-  const response = NextResponse.json(customer);
+  // Strip sensitive fields before returning to portal
+  const { portalToken: _pt, companyId: _cid, ...safeCustomer } = customer;
+  // Strip internal user IDs from activity logs
+  const safeJobs = safeCustomer.jobs.map((job) => ({
+    ...job,
+    activityLogs: job.activityLogs.map(({ userId: _uid, ...log }) => log),
+  }));
+
+  const response = NextResponse.json({ ...safeCustomer, jobs: safeJobs });
   response.headers.set("X-RateLimit-Limit", "60");
   return response;
 }

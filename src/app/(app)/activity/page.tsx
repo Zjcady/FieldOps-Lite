@@ -69,14 +69,16 @@ export default function ActivityPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch("/api/activity")
+    const controller = new AbortController();
+    fetch("/api/activity", { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error(`Failed to load activity (${r.status})`);
         return r.json();
       })
-      .then((data) => setLogs(Array.isArray(data) ? data : []))
-      .catch((e) => setError(e instanceof Error ? e.message : "Failed to load activity"))
-      .finally(() => setLoading(false));
+      .then((data) => { if (!controller.signal.aborted) setLogs(Array.isArray(data) ? data : []); })
+      .catch((e) => { if (e.name !== "AbortError" && !controller.signal.aborted) setError(e instanceof Error ? e.message : "Failed to load activity"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   return (

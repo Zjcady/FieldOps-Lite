@@ -4,7 +4,8 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Bell, FileText } from "lucide-react";
+import { Loader2, Bell, FileText, DollarSign } from "lucide-react";
+import { JOB_CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
 import Link from "next/link";
 
@@ -170,6 +171,9 @@ export default function SettingsPage() {
       </form>
 
       <div className="mt-4 max-w-lg space-y-4">
+        <LaborRatesSection />
+        <PricingTemplatesSection />
+
         <Card className="p-4 space-y-3">
           <h2 className="text-sm font-semibold">Quick Links</h2>
           <div className="space-y-2">
@@ -202,5 +206,130 @@ export default function SettingsPage() {
         </Card>
       </div>
     </div>
+  );
+}
+
+function LaborRatesSection() {
+  const [rates, setRates] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/labor-rates")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data: Array<{ category: string; ratePerHour: number }>) => {
+        const map: Record<string, string> = {};
+        data.forEach((r) => { map[r.category] = String(r.ratePerHour); });
+        setRates(map);
+        setLoaded(true);
+      })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  const handleSave = async () => {
+    setSaving(true);
+    const body = Object.entries(rates).map(([category, rate]) => ({
+      category,
+      ratePerHour: parseFloat(rate) || 0,
+    }));
+    const res = await fetch("/api/settings/labor-rates", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    setSaving(false);
+    if (res.ok) toast.success("Labor rates saved");
+    else toast.error("Failed to save rates");
+  };
+
+  if (!loaded) return null;
+
+  return (
+    <Card className="p-4 space-y-3">
+      <h2 className="text-sm font-semibold flex items-center gap-2">
+        <DollarSign className="h-4 w-4 text-muted-foreground" />
+        Labor Rates
+      </h2>
+      <p className="text-xs text-muted-foreground">Set hourly rates per job category for cost calculations.</p>
+      <div className="space-y-2">
+        {JOB_CATEGORIES.map((cat) => (
+          <div key={cat} className="flex items-center gap-3">
+            <span className="w-28 text-xs text-muted-foreground">{cat}</span>
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">$</span>
+              <Input
+                type="number"
+                step="0.50"
+                min="0"
+                className="w-24 h-8 text-sm"
+                value={rates[cat] ?? "45"}
+                onChange={(e) => setRates((prev) => ({ ...prev, [cat]: e.target.value }))}
+              />
+              <span className="text-xs text-muted-foreground">/hr</span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <Button size="sm" onClick={handleSave} disabled={saving}>
+        {saving && <Loader2 className="mr-1 h-3 w-3 animate-spin" />}
+        Save Rates
+      </Button>
+    </Card>
+  );
+}
+
+interface PTemplate {
+  id: string;
+  name: string;
+  category: string;
+  unit: string;
+  ratePerUnit: number;
+  materialCostPerUnit: number;
+  laborHoursPerUnit: number;
+}
+
+function PricingTemplatesSection() {
+  const [templates, setTemplates] = useState<PTemplate[]>([]);
+  const [loaded, setLoaded] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/settings/pricing-templates")
+      .then((r) => r.ok ? r.json() : [])
+      .then((data) => { setTemplates(data); setLoaded(true); })
+      .catch(() => setLoaded(true));
+  }, []);
+
+  if (!loaded) return null;
+
+  const grouped = templates.reduce<Record<string, PTemplate[]>>((acc, t) => {
+    (acc[t.category] ??= []).push(t);
+    return acc;
+  }, {});
+
+  return (
+    <Card className="p-4 space-y-3">
+      <h2 className="text-sm font-semibold">Pricing Templates</h2>
+      <p className="text-xs text-muted-foreground">Pre-configured rates for the job cost calculator.</p>
+
+      {Object.entries(grouped).map(([category, items]) => (
+        <div key={category}>
+          <h3 className="mb-1 text-xs font-semibold uppercase text-muted-foreground">{category}</h3>
+          <div className="space-y-1">
+            {items.map((t) => (
+              <div key={t.id} className="flex items-center justify-between rounded px-2 py-1 text-xs hover:bg-muted/50">
+                <span>{t.name}</span>
+                <span className="text-muted-foreground">
+                  ${Number(t.ratePerUnit)}/{t.unit} · mat ${Number(t.materialCostPerUnit)} · {t.laborHoursPerUnit} hrs/{t.unit}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+
+      {templates.length === 0 && (
+        <p className="text-xs text-muted-foreground italic">No templates configured yet. They will be created when you seed your database.</p>
+      )}
+    </Card>
   );
 }

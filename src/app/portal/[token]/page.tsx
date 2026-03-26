@@ -8,6 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import { StatusBadge } from "@/components/shared/status-badge";
 import { Timeline } from "@/components/shared/timeline";
 import { STATUS_META } from "@/lib/job-state-machine";
+import { BeforeAfter } from "@/components/photos/before-after";
 import { formatDate, formatDateTime } from "@/lib/format";
 import { Triangle, Send, Image as ImageIcon } from "lucide-react";
 import { toast } from "sonner";
@@ -173,6 +174,14 @@ export default function PortalPage({ params }: { params: Promise<{ token: string
                     </span>
                   </div>
                 ))}
+              </Card>
+            )}
+
+            {/* Before & After Showcase */}
+            {job.photos.some((p) => p.category === "before") && job.photos.some((p) => p.category === "after") && (
+              <Card className="mb-4 p-4">
+                <h2 className="mb-3 text-xs font-semibold uppercase text-muted-foreground">Before & After</h2>
+                <BeforeAfter photos={job.photos} />
               </Card>
             )}
 

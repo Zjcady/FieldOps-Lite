@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertCircle, Plus, Send, Mail, Users, Eye } from "lucide-react";
@@ -36,8 +37,10 @@ export default function OutreachPage() {
   const [creating, setCreating] = useState(false);
   const [previewCampaign, setPreviewCampaign] = useState<Campaign | null>(null);
   const [sending, setSending] = useState<string | null>(null);
+  const [confirmSendId, setConfirmSendId] = useState<string | null>(null);
 
   const handleSend = async (campaignId: string) => {
+    setConfirmSendId(null);
     setSending(campaignId);
     try {
       const res = await fetch(`/api/outreach/campaigns/${campaignId}/send`, { method: "POST" });
@@ -188,7 +191,7 @@ export default function OutreachPage() {
               {c.status === "draft" && (
                 <div className="mt-2 flex gap-2">
                   <Button size="xs" variant="outline" onClick={() => setPreviewCampaign(c)}>Preview</Button>
-                  <Button size="xs" onClick={() => handleSend(c.id)} disabled={sending === c.id}>
+                  <Button size="xs" onClick={() => setConfirmSendId(c.id)} disabled={sending === c.id}>
                     {sending === c.id ? "Sending..." : "Send"}
                   </Button>
                 </div>
@@ -217,6 +220,15 @@ export default function OutreachPage() {
           </Card>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmSendId}
+        title="Send Campaign?"
+        message="This will send emails to all recipients. This action cannot be undone."
+        confirmLabel="Send Emails"
+        onConfirm={() => { if (confirmSendId) handleSend(confirmSendId); }}
+        onCancel={() => setConfirmSendId(null)}
+      />
     </div>
   );
 }

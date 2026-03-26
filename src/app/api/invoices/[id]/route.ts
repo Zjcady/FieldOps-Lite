@@ -25,8 +25,13 @@ export async function PATCH(
   });
   if (!invoice) return apiError("Invoice not found", 404);
 
+  const VALID_STATUSES = ["draft", "sent", "paid", "overdue", "cancelled"];
+  if (body.status && !VALID_STATUSES.includes(body.status)) {
+    return apiError(`Invalid status. Must be one of: ${VALID_STATUSES.join(", ")}`, 400);
+  }
+
   const updated = await prisma.invoice.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       ...(body.status && { status: body.status }),
       ...(body.paidDate && { paidDate: new Date(body.paidDate) }),

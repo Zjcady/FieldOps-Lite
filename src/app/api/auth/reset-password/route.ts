@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Simple in-memory rate limiter (same pattern as portal route)
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -57,11 +58,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   }
 
-  // TODO: In production, call Supabase's resetPasswordForEmail:
-  // const supabase = createAdminClient();
-  // await supabase.auth.resetPasswordForEmail(email, {
-  //   redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/reset-password`,
-  // });
+  // Send password reset email via Supabase (only when Supabase is configured)
+  if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    try {
+      const supabase = createAdminClient();
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+      await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${appUrl}/auth/callback?next=/`,
+      });
+    } catch {
+      // Silently fail — don't reveal whether the email send succeeded
+    }
+  }
 
   return NextResponse.json({ success: true });
 }

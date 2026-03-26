@@ -89,6 +89,23 @@ export async function validateBody<T>(
   return [result.data, null];
 }
 
+// ── Global error handler wrapper ─────────────────────────────────────────
+type RouteHandler = (request: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse>;
+
+export function withErrorHandler(handler: RouteHandler): RouteHandler {
+  return async (request, context) => {
+    try {
+      return await handler(request, context);
+    } catch (error) {
+      const isPrismaNotFound = (error as { code?: string })?.code === "P2025";
+      if (isPrismaNotFound) return apiError("Record not found", 404);
+      // Log for observability but don't leak to client
+      console.error(`[API Error] ${request.method} ${request.url}`, error);
+      return apiError("Internal server error", 500);
+    }
+  };
+}
+
 // ── File upload validation (#7) ──────────────────────────────────────────
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);

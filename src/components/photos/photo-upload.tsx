@@ -6,7 +6,7 @@ import { Card } from "@/components/ui/card";
 import { Camera, Upload, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 
-const CATEGORIES = ["before", "progress", "after", "issue", "material"];
+const CATEGORIES = ["before", "progress", "after", "issue", "material", "arrival", "departure"];
 
 interface PhotoUploadProps {
   jobId: string;

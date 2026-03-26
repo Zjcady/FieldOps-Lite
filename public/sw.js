@@ -1,6 +1,6 @@
 // FieldOps Service Worker — offline caching & photo queue
 const CACHE_NAME = "fieldops-v1";
-const OFFLINE_URLS = ["/", "/jobs", "/crew", "/customers"];
+const OFFLINE_URLS = ["/", "/jobs", "/crew", "/customers", "/calendar", "/vendors", "/permits", "/settings", "/team", "/outreach", "/reports"];
 const DB_NAME = "fieldops-offline";
 const STORE_NAME = "photo-queue";
 
@@ -89,10 +89,10 @@ async function uploadPendingPhotos() {
           deleteTx.objectStore(STORE_NAME).delete(item.id);
         }
       } catch {
-        console.log("[SW] Failed to upload queued photo, will retry later");
+        // Will retry on next sync
       }
     }
   } catch {
-    console.log("[SW] No pending photos or DB error");
+    // No pending photos or DB unavailable
   }
 }

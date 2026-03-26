@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite } from "@/lib/api-utils";
 
 export async function DELETE(
   request: NextRequest,
@@ -8,6 +8,8 @@ export async function DELETE(
 ) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
 
   const { id, taskId } = await params;
 

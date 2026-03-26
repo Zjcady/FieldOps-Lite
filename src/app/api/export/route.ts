@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, getPagination } from "@/lib/api-utils";
+import { authenticateApi, apiError, getPagination, requireAdmin } from "@/lib/api-utils";
 
 // Whitelist of allowed export types
 const ALLOWED_TYPES = new Set(["jobs", "invoices", "customers"]);
@@ -13,6 +13,8 @@ function toCsv(headers: string[], rows: string[][]): string {
 export async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const adminErr = requireAdmin(user);
+  if (adminErr) return adminErr;
 
   const { searchParams } = new URL(request.url);
   const type = searchParams.get("type") || "jobs";
@@ -93,7 +95,8 @@ export async function GET(request: NextRequest) {
     });
 
     if (format === "json") {
-      return NextResponse.json(customers);
+      const safe = customers.map(({ portalToken: _pt, ...rest }) => rest);
+      return NextResponse.json(safe);
     }
 
     const headers = ["Name", "Email", "Phone", "Address", "Total Jobs"];

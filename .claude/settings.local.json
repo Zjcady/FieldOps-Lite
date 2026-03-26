@@ -50,7 +50,8 @@
       "Bash(npm install:*)",
       "Bash(node -e \"const z = require\\(''zod''\\); console.log\\(z.ZodType ? ''zod v3'' : ''unknown''\\)\")",
       "Bash(node -e \"import\\(''zod''\\).then\\(z => console.log\\(Object.keys\\(z\\).slice\\(0,5\\)\\)\\)\")",
-      "Bash(npm ls:*)"
+      "Bash(npm ls:*)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

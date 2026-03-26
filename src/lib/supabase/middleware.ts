@@ -2,8 +2,27 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
 export async function updateSession(request: NextRequest) {
-  // If Supabase is not configured, allow all requests through (dev mode)
+  // Dev mode (no Supabase): still enforce auth via dev cookie
   if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const { pathname } = request.nextUrl;
+    const isPublicRoute =
+      pathname.startsWith("/portal/") ||
+      pathname.startsWith("/api/portal/") ||
+      pathname.startsWith("/api/auth/") ||
+      pathname.startsWith("/api/health") ||
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/signup") ||
+      pathname.startsWith("/forgot-password") ||
+      pathname.startsWith("/auth/");
+
+    const hasDevCookie = request.cookies.has("fieldops_dev_auth");
+
+    if (!hasDevCookie && !isPublicRoute) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      return NextResponse.redirect(url);
+    }
+
     return NextResponse.next({ request });
   }
 
@@ -42,8 +61,11 @@ export async function updateSession(request: NextRequest) {
   const isPublicRoute =
     pathname.startsWith("/portal/") ||
     pathname.startsWith("/api/portal/") ||
+    pathname.startsWith("/api/auth/") ||
+    pathname.startsWith("/api/health") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
+    pathname.startsWith("/forgot-password") ||
     pathname.startsWith("/auth/");
 
   // If not authenticated and trying to access protected route, redirect to login

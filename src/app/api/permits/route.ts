@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, validateBody, getPagination, safeDate } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, validateBody, getPagination, safeDate } from "@/lib/api-utils";
 import { permitCreateSchema } from "@/lib/validations/job";
 
 export async function GET(request: NextRequest) {
@@ -28,6 +28,12 @@ export async function POST(request: NextRequest) {
 
   const [body, valErr] = await validateBody(request, permitCreateSchema);
   if (valErr) return valErr;
+
+  // Verify jobId belongs to this company
+  if (body.jobId) {
+    const job = await prisma.job.findUnique({ where: { id: body.jobId, companyId: user.companyId }, select: { id: true } });
+    if (!job) return apiError("Job not found", 404);
+  }
 
   const permit = await prisma.permit.create({
     data: {

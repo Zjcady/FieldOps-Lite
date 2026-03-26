@@ -30,20 +30,27 @@ export async function POST(request: NextRequest) {
 
   // Find the user by authId or email
   const user = authId
-    ? await prisma.user.findUnique({ where: { authId }, select: { authId: true, name: true, email: true } })
-    : await prisma.user.findFirst({ where: { email }, select: { authId: true, name: true, email: true } });
+    ? await prisma.user.findUnique({ where: { authId }, select: { id: true, authId: true, name: true, email: true } })
+    : await prisma.user.findFirst({ where: { email }, select: { id: true, authId: true, name: true, email: true } });
 
-  if (!user || !user.authId) {
+  if (!user) {
     const errRes = NextResponse.json({ error: "User not found" }, { status: 404 });
     errRes.headers.set("Cache-Control", "no-store, no-cache");
     return errRes;
+  }
+
+  // If user has no authId, assign a dev one so the cookie works
+  let userAuthId = user.authId;
+  if (!userAuthId) {
+    userAuthId = `dev-${user.id}`;
+    await prisma.user.update({ where: { id: user.id }, data: { authId: userAuthId } });
   }
 
   const response = NextResponse.json({ success: true, name: user.name, email: user.email });
   response.headers.set("Cache-Control", "no-store, no-cache");
 
   // Set the dev auth cookie
-  response.cookies.set(DEV_AUTH_COOKIE, user.authId, {
+  response.cookies.set(DEV_AUTH_COOKIE, userAuthId, {
     path: "/",
     httpOnly: true,
     sameSite: "lax",

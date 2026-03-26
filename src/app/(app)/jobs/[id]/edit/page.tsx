@@ -16,29 +16,33 @@ export default function EditJobPage({ params }: { params: Promise<{ id: string }
   const [fetchError, setFetchError] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`/api/jobs/${id}`)
+    const controller = new AbortController();
+    fetch(`/api/jobs/${id}`, { signal: controller.signal })
       .then((r) => {
         if (!r.ok) throw new Error("Failed to load job");
         return r.json();
       })
       .then((job) => {
-        setDefaultValues({
-          title: job.title,
-          customerId: job.customerId,
-          propertyId: job.propertyId || undefined,
-          crewId: job.crewId || undefined,
-          description: job.description || undefined,
-          type: job.type,
-          category: job.category || undefined,
-          priority: job.priority,
-          scheduledDate: job.scheduledDate?.split("T")[0],
-          estimatedEnd: job.estimatedEnd?.split("T")[0],
-          estimatedCost: job.estimatedCost || undefined,
-          estimatedHours: job.estimatedHours || undefined,
-          address: job.address || undefined,
-        });
+        if (!controller.signal.aborted) {
+          setDefaultValues({
+            title: job.title,
+            customerId: job.customerId,
+            propertyId: job.propertyId || undefined,
+            crewId: job.crewId || undefined,
+            description: job.description || undefined,
+            type: job.type,
+            category: job.category || undefined,
+            priority: job.priority,
+            scheduledDate: job.scheduledDate?.split("T")[0],
+            estimatedEnd: job.estimatedEnd?.split("T")[0],
+            estimatedCost: job.estimatedCost || undefined,
+            estimatedHours: job.estimatedHours || undefined,
+            address: job.address || undefined,
+          });
+        }
       })
-      .catch(() => setFetchError("Failed to load job data. Please go back and try again."));
+      .catch((e) => { if (e.name !== "AbortError") setFetchError("Failed to load job data. Please go back and try again."); });
+    return () => controller.abort();
   }, [id]);
 
   const handleSubmit = async (data: JobCreateInput) => {

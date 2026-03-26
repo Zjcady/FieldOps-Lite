@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateApi, apiError, validateFile, validateCoords } from "@/lib/api-utils";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function POST(
   request: NextRequest,
@@ -48,7 +49,6 @@ export async function POST(
   // Validate coordinates (#10)
   const coords = validateCoords(formData.get("lat"), formData.get("lng"));
 
-  // For now, store as placeholder URL. In production, upload to Supabase Storage.
   let url = "/placeholder-photo.jpg";
 
   if (file) {
@@ -56,10 +56,31 @@ export async function POST(
     const fileErr = validateFile(file);
     if (fileErr) return apiError(fileErr, 400);
 
-    // TODO: Upload to Supabase Storage
-    // const { data } = await supabase.storage.from('photos').upload(`jobs/${id}/${Date.now()}-${file.name}`, file);
-    // url = supabase.storage.from('photos').getPublicUrl(data.path).data.publicUrl;
-    url = `https://placeholder.photos/job/${id}/${Date.now()}`;
+    // Upload to Supabase Storage if configured, otherwise use placeholder
+    if (process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        const supabase = createAdminClient();
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+        const path = `jobs/${id}/${Date.now()}-${safeName}`;
+        const buffer = Buffer.from(await file.arrayBuffer());
+
+        const { data, error } = await supabase.storage
+          .from("photos")
+          .upload(path, buffer, { contentType: file.type, upsert: false });
+
+        if (error) return apiError(`Upload failed: ${error.message}`, 500);
+
+        const { data: publicUrlData } = supabase.storage
+          .from("photos")
+          .getPublicUrl(data.path);
+
+        url = publicUrlData.publicUrl;
+      } catch {
+        return apiError("Photo upload failed", 500);
+      }
+    } else {
+      url = `/placeholder-photo-${Date.now()}.jpg`;
+    }
   }
 
   const photo = await prisma.photo.create({

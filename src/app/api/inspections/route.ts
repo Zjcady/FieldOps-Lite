@@ -34,6 +34,16 @@ export async function POST(request: Request) {
     return apiError("Inspection type is required", 400);
   }
 
+  // Verify FK references belong to this company
+  if (body.jobId) {
+    const job = await prisma.job.findUnique({ where: { id: body.jobId, companyId: user.companyId }, select: { id: true } });
+    if (!job) return apiError("Job not found", 404);
+  }
+  if (body.permitId) {
+    const permit = await prisma.permit.findUnique({ where: { id: body.permitId, companyId: user.companyId }, select: { id: true } });
+    if (!permit) return apiError("Permit not found", 404);
+  }
+
   const inspection = await prisma.inspection.create({
     data: {
       companyId: user.companyId,

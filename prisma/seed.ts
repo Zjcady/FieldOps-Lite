@@ -4,9 +4,12 @@ import { v4 as uuid } from "uuid";
 const prisma = new PrismaClient();
 
 async function main() {
-  // Clean existing data
+  // Clean existing data (order matters for FK constraints)
   await prisma.portalMessage.deleteMany();
+  await prisma.emailRecipient.deleteMany();
+  await prisma.emailCampaign.deleteMany();
   await prisma.activityLog.deleteMany();
+  await prisma.checkin.deleteMany();
   await prisma.invoice.deleteMany();
   await prisma.material.deleteMany();
   await prisma.note.deleteMany();
@@ -14,12 +17,16 @@ async function main() {
   await prisma.task.deleteMany();
   await prisma.inspection.deleteMany();
   await prisma.permit.deleteMany();
+  await prisma.timeEntry.deleteMany();
+  await prisma.recurringSchedule.deleteMany();
   await prisma.job.deleteMany();
   await prisma.crewMember.deleteMany();
   await prisma.crew.deleteMany();
   await prisma.property.deleteMany();
   await prisma.customer.deleteMany();
   await prisma.vendor.deleteMany();
+  await prisma.laborRate.deleteMany();
+  await prisma.pricingTemplate.deleteMany();
   await prisma.user.deleteMany();
   await prisma.company.deleteMany();
 
@@ -454,6 +461,41 @@ async function main() {
       { customerId: custIds.martinez, senderType: "contractor", content: "Hi Linda! Pavers should be fully set by Mar 14. We'll seal and clean up Mar 15. Looks great so far!", isRead: true, createdAt: d(0) },
       { customerId: custIds.sanders, senderType: "customer", content: "The enclosure is looking amazing! Can we add a pet door?", createdAt: d(-2) },
       { customerId: custIds.sanders, senderType: "contractor", content: "Thanks Tom! We can absolutely add a pet door. I'll get you a quote by tomorrow.", isRead: true, createdAt: d(-2) },
+    ],
+  });
+
+  // ─── Labor Rates ───
+  const laborCategories = ["Hardscape", "Fencing", "Lanai", "Landscaping", "Lighting", "Maintenance"];
+  await prisma.laborRate.createMany({
+    data: laborCategories.map((cat) => ({
+      companyId,
+      category: cat,
+      ratePerHour: 45,
+    })),
+  });
+
+  // ─── Pricing Templates ───
+  await prisma.pricingTemplate.createMany({
+    data: [
+      { companyId, name: "Paver Installation", category: "Hardscape", unit: "sqft", ratePerUnit: 12, materialCostPerUnit: 4.5, laborHoursPerUnit: 0.08 },
+      { companyId, name: "Retaining Wall", category: "Hardscape", unit: "linft", ratePerUnit: 45, materialCostPerUnit: 15, laborHoursPerUnit: 0.25 },
+      { companyId, name: "French Drain", category: "Hardscape", unit: "linft", ratePerUnit: 25, materialCostPerUnit: 8, laborHoursPerUnit: 0.15 },
+      { companyId, name: "Concrete Pad", category: "Hardscape", unit: "sqft", ratePerUnit: 8, materialCostPerUnit: 3, laborHoursPerUnit: 0.05 },
+      { companyId, name: "Driveway Pavers", category: "Hardscape", unit: "sqft", ratePerUnit: 14, materialCostPerUnit: 5.5, laborHoursPerUnit: 0.09 },
+      { companyId, name: "Wood Fence", category: "Fencing", unit: "linft", ratePerUnit: 30, materialCostPerUnit: 12, laborHoursPerUnit: 0.12 },
+      { companyId, name: "Vinyl Fence", category: "Fencing", unit: "linft", ratePerUnit: 35, materialCostPerUnit: 18, laborHoursPerUnit: 0.1 },
+      { companyId, name: "Chain Link Fence", category: "Fencing", unit: "linft", ratePerUnit: 18, materialCostPerUnit: 8, laborHoursPerUnit: 0.08 },
+      { companyId, name: "Aluminum Fence", category: "Fencing", unit: "linft", ratePerUnit: 40, materialCostPerUnit: 22, laborHoursPerUnit: 0.1 },
+      { companyId, name: "Screen Enclosure", category: "Lanai", unit: "sqft", ratePerUnit: 15, materialCostPerUnit: 6, laborHoursPerUnit: 0.06 },
+      { companyId, name: "Lanai Rescreening", category: "Lanai", unit: "sqft", ratePerUnit: 5, materialCostPerUnit: 1.5, laborHoursPerUnit: 0.03 },
+      { companyId, name: "Sod Installation", category: "Landscaping", unit: "sqft", ratePerUnit: 2.5, materialCostPerUnit: 0.8, laborHoursPerUnit: 0.02 },
+      { companyId, name: "Mulch & Beds", category: "Landscaping", unit: "sqft", ratePerUnit: 3.5, materialCostPerUnit: 1.5, laborHoursPerUnit: 0.03 },
+      { companyId, name: "Tree Planting", category: "Landscaping", unit: "each", ratePerUnit: 150, materialCostPerUnit: 75, laborHoursPerUnit: 1 },
+      { companyId, name: "Landscape Lighting", category: "Lighting", unit: "each", ratePerUnit: 250, materialCostPerUnit: 120, laborHoursPerUnit: 1.5 },
+      { companyId, name: "Path Lights", category: "Lighting", unit: "each", ratePerUnit: 85, materialCostPerUnit: 35, laborHoursPerUnit: 0.5 },
+      { companyId, name: "Lawn Maintenance", category: "Maintenance", unit: "day", ratePerUnit: 350, materialCostPerUnit: 20, laborHoursPerUnit: 8 },
+      { companyId, name: "Irrigation Repair", category: "Maintenance", unit: "hour", ratePerUnit: 75, materialCostPerUnit: 15, laborHoursPerUnit: 1 },
+      { companyId, name: "Pressure Washing", category: "Maintenance", unit: "sqft", ratePerUnit: 0.35, materialCostPerUnit: 0.05, laborHoursPerUnit: 0.005 },
     ],
   });
 

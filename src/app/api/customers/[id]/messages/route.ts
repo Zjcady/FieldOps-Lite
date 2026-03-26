@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, parseBody } from "@/lib/api-utils";
 
 // Contractor sends a message to a customer via their portal
 export async function POST(
@@ -9,6 +9,8 @@ export async function POST(
 ) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
 
   const { id } = await params;
 
@@ -19,7 +21,8 @@ export async function POST(
 
   if (!customer) return apiError("Customer not found", 404);
 
-  const body = await request.json();
+  const [body, parseErr] = await parseBody<{ content?: string }>(request);
+  if (parseErr) return parseErr;
   if (!body.content?.trim()) return apiError("Message content required", 400);
   if (body.content.length > 5000) return apiError("Message too long", 400);
 

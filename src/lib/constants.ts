@@ -64,3 +64,17 @@ export const MATERIAL_STATUSES = [
   "delivered",
   "installed",
 ] as const;
+
+export const PHOTO_CATEGORIES = [
+  "before", "progress", "after", "issue", "material", "arrival", "departure",
+] as const;
+
+export const PRICING_UNITS = ["sqft", "linft", "each", "day", "hour"] as const;
+
+export const UNIT_LABELS: Record<string, string> = {
+  sqft: "per sq ft",
+  linft: "per linear ft",
+  each: "per unit",
+  day: "per day",
+  hour: "per hour",
+};

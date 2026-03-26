@@ -36,23 +36,13 @@ export async function getUser(): Promise<AppUser | null> {
     const cookieStore = await cookies();
     const devAuthId = cookieStore.get(DEV_AUTH_COOKIE)?.value;
 
-    let devUser;
-    if (devAuthId) {
-      // Look up the specific dev user
-      devUser = await prisma.user.findUnique({
-        where: { authId: devAuthId },
-        select: USER_SELECT,
-      });
-    }
+    // Dev mode requires explicit login via /api/auth/dev-login — no auto-login
+    if (!devAuthId) return null;
 
-    // Fall back to first user if cookie not set or user not found
-    if (!devUser) {
-      devUser = await prisma.user.findFirst({
-        where: { isActive: true },
-        select: USER_SELECT,
-        orderBy: { createdAt: "asc" },
-      });
-    }
+    const devUser = await prisma.user.findUnique({
+      where: { authId: devAuthId },
+      select: USER_SELECT,
+    });
 
     if (!devUser || !devUser.isActive) return null;
     return { ...devUser, authId: devUser.authId ?? "dev" } as AppUser;

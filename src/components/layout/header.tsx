@@ -33,7 +33,7 @@ export function Header() {
   // Fetch alerts from dashboard summary API (with 60s cache)
   useEffect(() => {
     if (Date.now() - alertsCache.ts < 60000 && alertsCache.data) {
-      setAlerts(alertsCache.data);
+      setAlerts(alertsCache.data); // eslint-disable-line react-hooks/set-state-in-effect
       return;
     }
     fetch("/api/reports/summary")
@@ -51,7 +51,7 @@ export function Header() {
         alertsCache = { data: newAlerts, ts: Date.now() };
         setAlerts(newAlerts);
       })
-      .catch((e) => console.warn("[FieldOps] Failed to load notifications:", e));
+      .catch(() => {});
   }, []);
 
   // Close on click outside or Escape key

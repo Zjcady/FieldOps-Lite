@@ -24,8 +24,13 @@ export async function PUT(
   }>(request);
   if (parseErr) return parseErr;
 
+  const VALID_TEMPLATES = ["general", "seasonal_discount", "followup", "referral", "maintenance_reminder"];
+  if (body.template && !VALID_TEMPLATES.includes(body.template)) {
+    return apiError(`Invalid template. Must be one of: ${VALID_TEMPLATES.join(", ")}`, 400);
+  }
+
   const updated = await prisma.emailCampaign.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       ...(body.name !== undefined && { name: body.name }),
       ...(body.subject !== undefined && { subject: body.subject }),
@@ -37,33 +42,4 @@ export async function PUT(
   return NextResponse.json(updated);
 }
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const [user, errorRes] = await authenticateApi();
-  if (errorRes) return errorRes;
-  const writeErr = requireWrite(user);
-  if (writeErr) return writeErr;
-  const { id } = await params;
-
-  const campaign = await prisma.emailCampaign.findUnique({ where: { id, companyId: user.companyId } });
-  if (!campaign) return apiError("Campaign not found", 404);
-  if (campaign.status === "sent") return apiError("Campaign already sent", 400);
-
-  // Update campaign status
-  const updated = await prisma.emailCampaign.update({
-    where: { id },
-    data: { status: "sent", sentAt: new Date() },
-  });
-
-  // Mark all recipients as sent
-  await prisma.emailRecipient.updateMany({
-    where: { campaignId: id, status: "pending" },
-    data: { status: "sent", sentAt: new Date() },
-  });
-
-  // TODO: Integrate with Resend API to actually send emails
-
-  return NextResponse.json(updated);
-}
+// POST /send is handled by the dedicated send/ route

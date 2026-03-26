@@ -24,7 +24,9 @@ export async function GET(request: NextRequest) {
     skip,
     take,
   });
-  return NextResponse.json(customers);
+  // Strip portalToken from list responses (it's a bearer credential)
+  const safe = customers.map(({ portalToken: _pt, ...rest }) => rest);
+  return NextResponse.json(safe);
 }
 
 export async function POST(request: NextRequest) {
@@ -41,7 +43,7 @@ export async function POST(request: NextRequest) {
       email: body.email || null,
       phone: body.phone || null,
       address: body.address || null,
-      portalToken: crypto.randomUUID().replace(/-/g, "").substring(0, 12),
+      portalToken: crypto.randomUUID(),
     },
   });
 

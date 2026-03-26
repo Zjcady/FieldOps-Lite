@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireAdmin } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireAdmin, requireWrite, parseBody } from "@/lib/api-utils";
 
 export async function GET(
   request: NextRequest,
@@ -28,7 +28,9 @@ export async function GET(
 
   if (!customer) return apiError("Customer not found", 404);
 
-  return NextResponse.json(customer);
+  // Strip portalToken from response (it's a bearer credential)
+  const { portalToken: _pt, ...safeCustomer } = customer;
+  return NextResponse.json(safeCustomer);
 }
 
 export async function PUT(
@@ -37,9 +39,12 @@ export async function PUT(
 ) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+  const writeErr = requireWrite(user);
+  if (writeErr) return writeErr;
 
   const { id } = await params;
-  const body = await request.json();
+  const [body, parseErr] = await parseBody<{ name?: string; email?: string; phone?: string; address?: string }>(request);
+  if (parseErr) return parseErr;
 
   // Only allow updating specific fields
   const { name, email, phone, address } = body;

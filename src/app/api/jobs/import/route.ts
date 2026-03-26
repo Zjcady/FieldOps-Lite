@@ -23,6 +23,9 @@ export async function POST(request: NextRequest) {
   if (!body.rows || !Array.isArray(body.rows) || body.rows.length === 0) {
     return apiError("rows array is required", 400);
   }
+  if (body.rows.length > 500) {
+    return apiError("Maximum 500 rows per import", 400);
+  }
 
   let imported = 0;
   let failed = 0;
@@ -48,7 +51,7 @@ export async function POST(request: NextRequest) {
         throw new Error(`Customer "${row.customerName}" not found`);
       }
 
-      const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+      const rand = crypto.randomUUID().replace(/-/g, "").substring(0, 8).toUpperCase();
       const jobNumber = `JOB-${year}-${rand}`;
       const cost = typeof row.estimatedCost === "string" ? parseFloat(row.estimatedCost) : row.estimatedCost;
 

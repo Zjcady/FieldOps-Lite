@@ -63,6 +63,12 @@ export async function POST(request: NextRequest) {
   });
   if (!job) return apiError("Job not found", 404);
 
+  // Verify vendorId belongs to company
+  if (body.vendorId) {
+    const vendor = await prisma.vendor.findUnique({ where: { id: body.vendorId, companyId: user.companyId }, select: { id: true } });
+    if (!vendor) return apiError("Vendor not found", 404);
+  }
+
   const totalCost = body.quantity * body.unitCost;
 
   const material = await prisma.material.create({

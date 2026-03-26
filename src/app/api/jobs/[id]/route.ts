@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, parseBody, safeDate, withRequestId } from "@/lib/api-utils";
 import { jobUpdateSchema } from "@/lib/validations/job";
+import { JOB_STATUSES } from "@/lib/job-state-machine";
 
 export async function GET(
   request: NextRequest,
@@ -29,6 +30,10 @@ export async function GET(
         include: { user: true },
         orderBy: { createdAt: "desc" },
       },
+      checkins: {
+        include: { user: { select: { name: true } }, photo: { select: { id: true, url: true } } },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -54,6 +59,12 @@ export async function PUT(
 
   const existing = await prisma.job.findUnique({ where: { id, companyId: user.companyId } });
   if (!existing) return apiError("Job not found", 404);
+
+  // Verify crewId FK belongs to this company
+  if (body.crewId) {
+    const crew = await prisma.crew.findUnique({ where: { id: body.crewId, companyId: user.companyId }, select: { id: true } });
+    if (!crew) return apiError("Crew not found", 404);
+  }
 
   const job = await prisma.job.update({
     where: { id, companyId: user.companyId },
@@ -105,6 +116,10 @@ export async function PATCH(
 
   if (body.progress !== undefined && (body.progress < 0 || body.progress > 100)) {
     return apiError("Progress must be between 0 and 100", 400);
+  }
+
+  if (body.status !== undefined && !JOB_STATUSES.includes(body.status as (typeof JOB_STATUSES)[number])) {
+    return apiError(`Invalid status. Must be one of: ${JOB_STATUSES.join(", ")}`, 400);
   }
 
   const data: Record<string, unknown> = {};

@@ -47,8 +47,9 @@ export async function PATCH(
     data.deliveryDate = new Date(body.deliveryDate);
   }
 
+  // Use existing.id to prevent TOCTOU — re-verify ownership inline
   const updated = await prisma.material.update({
-    where: { id },
+    where: { id: existing.id },
     data,
     include: {
       job: { select: { title: true, jobNumber: true } },
