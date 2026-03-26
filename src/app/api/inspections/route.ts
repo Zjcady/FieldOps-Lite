@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, parseBody, apiError, safeDate, getPagination } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, parseBody, apiError, safeDate, getPagination, withErrorHandler } from "@/lib/api-utils";
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -16,9 +16,9 @@ export async function GET(request: NextRequest) {
     take,
   });
   return NextResponse.json(inspections);
-}
+});
 
-export async function POST(request: Request) {
+export const POST = withErrorHandler(async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -62,4 +62,4 @@ export async function POST(request: Request) {
   });
 
   return NextResponse.json(inspection, { status: 201 });
-}
+});

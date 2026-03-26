@@ -69,12 +69,12 @@ export default function CustomersPage() {
 
       {showAdd && (
         <Card className="mb-4 p-4 space-y-3">
-          <Input placeholder="Customer name *" aria-label="Customer name" value={newName} onChange={(e) => setNewName(e.target.value)} autoFocus />
+          <Input placeholder="Customer name *" aria-label="Customer name" value={newName} onChange={(e) => setNewName(e.target.value)} maxLength={255} autoFocus />
           <div className="grid grid-cols-2 gap-3">
-            <Input placeholder="Email" type="email" aria-label="Customer email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
-            <Input placeholder="Phone" aria-label="Customer phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} />
+            <Input placeholder="Email" type="email" aria-label="Customer email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} maxLength={255} />
+            <Input placeholder="Phone" aria-label="Customer phone" value={newPhone} onChange={(e) => setNewPhone(e.target.value)} maxLength={50} />
           </div>
-          <Input placeholder="Address" aria-label="Customer address" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} />
+          <Input placeholder="Address" aria-label="Customer address" value={newAddress} onChange={(e) => setNewAddress(e.target.value)} maxLength={500} />
           <div className="flex gap-2">
             <Button size="sm" onClick={handleAdd} disabled={adding || !newName.trim()}>Add</Button>
             <Button size="sm" variant="outline" onClick={() => setShowAdd(false)}>Cancel</Button>

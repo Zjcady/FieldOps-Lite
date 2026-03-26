@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, validateBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, validateBody, withErrorHandler } from "@/lib/api-utils";
 import { taskCreateSchema, taskUpdateSchema } from "@/lib/validations/job";
 
-export async function GET(
+export const GET = withErrorHandler(async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -21,9 +21,9 @@ export async function GET(
     orderBy: { sortOrder: "asc" },
   });
   return NextResponse.json(tasks);
-}
+});
 
-export async function POST(
+export const POST = withErrorHandler(async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -55,9 +55,9 @@ export async function POST(
   });
 
   return NextResponse.json(task, { status: 201 });
-}
+});
 
-export async function PATCH(request: NextRequest) {
+export const PATCH = withErrorHandler(async function PATCH(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -95,4 +95,4 @@ export async function PATCH(request: NextRequest) {
   });
 
   return NextResponse.json(updated);
-}
+});

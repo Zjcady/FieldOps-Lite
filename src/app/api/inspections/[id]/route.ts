@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, validateBody, safeDate } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, validateBody, safeDate, withErrorHandler } from "@/lib/api-utils";
 import { inspectionUpdateSchema } from "@/lib/validations/job";
 
-export async function PUT(
+export const PUT = withErrorHandler(async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -48,4 +48,4 @@ export async function PUT(
   }
 
   return NextResponse.json(inspection);
-}
+});

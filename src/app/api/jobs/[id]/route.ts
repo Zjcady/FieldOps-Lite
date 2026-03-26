@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, parseBody, safeDate, withRequestId } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, parseBody, safeDate, withRequestId, withErrorHandler } from "@/lib/api-utils";
 import { jobUpdateSchema } from "@/lib/validations/job";
 import { JOB_STATUSES } from "@/lib/job-state-machine";
 
-export async function GET(
+export const GET = withErrorHandler(async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -40,9 +40,9 @@ export async function GET(
   if (!job) return apiError("Job not found", 404);
 
   return withRequestId(NextResponse.json(job));
-}
+});
 
-export async function PUT(
+export const PUT = withErrorHandler(async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -88,9 +88,9 @@ export async function PUT(
   });
 
   return NextResponse.json(job);
-}
+});
 
-export async function PATCH(
+export const PATCH = withErrorHandler(async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -136,9 +136,9 @@ export async function PATCH(
   });
 
   return NextResponse.json(job);
-}
+});
 
-export async function DELETE(
+export const DELETE = withErrorHandler(async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -155,4 +155,4 @@ export async function DELETE(
   // Fix #5: Use companyId on the actual delete to prevent race condition
   await prisma.job.delete({ where: { id, companyId: user.companyId } });
   return NextResponse.json({ success: true });
-}
+});

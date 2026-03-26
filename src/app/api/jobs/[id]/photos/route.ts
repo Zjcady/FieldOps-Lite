@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, validateFile, validateCoords } from "@/lib/api-utils";
+import { authenticateApi, apiError, validateFile, validateCoords, withErrorHandler } from "@/lib/api-utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-export async function POST(
+export const POST = withErrorHandler(async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -106,4 +106,4 @@ export async function POST(
   });
 
   return NextResponse.json(photo, { status: 201 });
-}
+});

@@ -147,6 +147,7 @@ export default function SetupPage() {
             placeholder="Company name *"
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
+            maxLength={255}
             autoFocus
           />
           <Input
@@ -154,11 +155,13 @@ export default function SetupPage() {
             type="tel"
             value={companyPhone}
             onChange={(e) => setCompanyPhone(e.target.value)}
+            maxLength={50}
           />
           <Input
             placeholder="Business address (optional)"
             value={companyAddress}
             onChange={(e) => setCompanyAddress(e.target.value)}
+            maxLength={500}
           />
         </div>
       )}
@@ -171,6 +174,7 @@ export default function SetupPage() {
             placeholder="Your full name *"
             value={name}
             onChange={(e) => setName(e.target.value)}
+            maxLength={255}
             autoFocus
           />
           <Input
@@ -178,6 +182,7 @@ export default function SetupPage() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
+            maxLength={50}
           />
         </div>
       )}

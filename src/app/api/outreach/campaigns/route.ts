@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import DOMPurify from "isomorphic-dompurify";
 import prisma from "@/lib/prisma";
 import { authenticateApi, requireWrite, validateBody } from "@/lib/api-utils";
 import { campaignCreateSchema } from "@/lib/validations/job";
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
       companyId: user.companyId,
       name: body.name,
       subject: body.subject,
-      body: body.body,
+      body: DOMPurify.sanitize(body.body, { ALLOWED_TAGS: ["p", "br", "strong", "em", "a", "ul", "ol", "li", "h1", "h2", "h3", "img", "div", "span"], ALLOWED_ATTR: ["href", "src", "alt", "style", "class"] }),
       template: body.template || "general",
       recipients: {
         create: validCustomers.map((c) => ({

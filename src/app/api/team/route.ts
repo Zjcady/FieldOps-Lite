@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireAdmin, parseBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireAdmin, parseBody, withErrorHandler } from "@/lib/api-utils";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { resend } from "@/lib/resend";
 
 const VALID_ROLES = new Set(["crew_member", "crew_leader", "dispatcher", "ops_manager"]);
 
-export async function GET() {
+export const GET = withErrorHandler(async function GET(_request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -25,9 +25,9 @@ export async function GET() {
   });
 
   return NextResponse.json(users);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -107,4 +107,4 @@ export async function POST(request: NextRequest) {
   }
 
   return NextResponse.json(newUser, { status: 201 });
-}
+});

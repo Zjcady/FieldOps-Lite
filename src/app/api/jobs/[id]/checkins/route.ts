@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, validateBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, validateBody, withErrorHandler } from "@/lib/api-utils";
 import { checkinSchema } from "@/lib/validations/job";
 import { haversineDistance, VERIFICATION_RADIUS_METERS } from "@/lib/geo";
 
-export async function GET(
+export const GET = withErrorHandler(async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -29,9 +29,9 @@ export async function GET(
   });
 
   return NextResponse.json(checkins);
-}
+});
 
-export async function POST(
+export const POST = withErrorHandler(async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -104,4 +104,4 @@ export async function POST(
   });
 
   return NextResponse.json(checkin, { status: 201 });
-}
+});

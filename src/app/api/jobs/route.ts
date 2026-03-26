@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, getPagination, getSafeSearch, validateBody, safeDate, withRequestId } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, getPagination, getSafeSearch, validateBody, safeDate, withRequestId, withErrorHandler } from "@/lib/api-utils";
 import { jobCreateSchema } from "@/lib/validations/job";
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -53,9 +53,9 @@ export async function GET(request: NextRequest) {
   });
 
   return withRequestId(NextResponse.json(jobs));
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -109,4 +109,4 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json(result, { status: 201 });
-}
+});

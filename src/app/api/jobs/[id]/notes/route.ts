@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, parseBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, parseBody, withErrorHandler } from "@/lib/api-utils";
 
-export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export const POST = withErrorHandler(async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
   const { id } = await params;
@@ -16,4 +16,4 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     include: { user: { select: { name: true } } },
   });
   return NextResponse.json(note, { status: 201 });
-}
+});

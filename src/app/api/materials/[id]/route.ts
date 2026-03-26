@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, parseBody, apiError } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, parseBody, apiError, withErrorHandler } from "@/lib/api-utils";
 import { MATERIAL_STATUSES } from "@/lib/constants";
 
-export async function PATCH(
+export const PATCH = withErrorHandler(async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -58,4 +58,4 @@ export async function PATCH(
   });
 
   return NextResponse.json(updated);
-}
+});

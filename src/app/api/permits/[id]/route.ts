@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, safeDate } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, requireAdmin, validateBody, safeDate, withErrorHandler } from "@/lib/api-utils";
 import { permitCreateSchema } from "@/lib/validations/job";
 
 const permitUpdateSchema = permitCreateSchema.partial();
 
-export async function PUT(
+export const PUT = withErrorHandler(async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -39,9 +39,9 @@ export async function PUT(
   });
 
   return NextResponse.json(permit);
-}
+});
 
-export async function DELETE(
+export const DELETE = withErrorHandler(async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -58,4 +58,4 @@ export async function DELETE(
   // Fix #5: Use companyId on the actual delete to prevent race condition
   await prisma.permit.delete({ where: { id, companyId: user.companyId } });
   return NextResponse.json({ success: true });
-}
+});

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, validateBody, getPagination, safeDate } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, validateBody, getPagination, safeDate, withErrorHandler } from "@/lib/api-utils";
 import { permitCreateSchema } from "@/lib/validations/job";
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -17,9 +17,9 @@ export async function GET(request: NextRequest) {
     take,
   });
   return NextResponse.json(permits);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -52,4 +52,4 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json(permit, { status: 201 });
-}
+});

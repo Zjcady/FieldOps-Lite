@@ -5,6 +5,8 @@ import { useEffect, useState, useCallback, useRef } from "react";
 interface UseFetchOptions {
   /** Don't fetch on mount — wait for manual refetch() */
   manual?: boolean;
+  /** Number of retries for transient failures (default: 1) */
+  retries?: number;
 }
 
 interface UseFetchReturn<T> {
@@ -34,25 +36,42 @@ export function useFetch<T>(url: string | null, options?: UseFetchOptions): UseF
 
     setLoading(true);
     setError(null);
-    try {
-      const res = await fetch(url, { signal: controller.signal });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
-        throw new Error(err.error || `Request failed (${res.status})`);
+    const maxRetries = options?.retries ?? 1;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        const res = await fetch(url, { signal: controller.signal });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+          // Don't retry 4xx client errors
+          if (res.status >= 400 && res.status < 500) {
+            throw new Error(err.error || `Request failed (${res.status})`);
+          }
+          throw new Error(err.error || `Server error (${res.status})`);
+        }
+        const json = await res.json();
+        if (!controller.signal.aborted) {
+          setData(json);
+          setError(null);
+        }
+        lastError = null;
+        break;
+      } catch (e) {
+        if (e instanceof DOMException && e.name === "AbortError") return;
+        lastError = e instanceof Error ? e : new Error("An error occurred");
+        // Don't retry 4xx errors
+        if (lastError.message.includes("Request failed")) break;
+        // Brief delay before retry
+        if (attempt < maxRetries) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+        }
       }
-      const json = await res.json();
-      if (!controller.signal.aborted) {
-        setData(json);
-      }
-    } catch (e) {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      if (!controller.signal.aborted) {
-        setError(e instanceof Error ? e.message : "An error occurred");
-      }
-    } finally {
-      if (!controller.signal.aborted) {
-        setLoading(false);
-      }
+    }
+
+    if (!controller.signal.aborted) {
+      if (lastError) setError(lastError.message);
+      setLoading(false);
     }
   }, [url]);
 

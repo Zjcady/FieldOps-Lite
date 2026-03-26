@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireAdmin, requireWrite, parseBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireAdmin, requireWrite, parseBody, withErrorHandler } from "@/lib/api-utils";
 
-export async function GET(
+export const GET = withErrorHandler(async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -31,9 +31,9 @@ export async function GET(
   // Strip portalToken from response (it's a bearer credential)
   const { portalToken: _pt, ...safeCustomer } = customer;
   return NextResponse.json(safeCustomer);
-}
+});
 
-export async function PUT(
+export const PUT = withErrorHandler(async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -75,9 +75,9 @@ export async function PUT(
   });
 
   return NextResponse.json(updated);
-}
+});
 
-export async function DELETE(
+export const DELETE = withErrorHandler(async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
@@ -110,4 +110,4 @@ export async function DELETE(
   await prisma.customer.delete({ where: { id, companyId: user.companyId } });
 
   return NextResponse.json({ success: true });
-}
+});

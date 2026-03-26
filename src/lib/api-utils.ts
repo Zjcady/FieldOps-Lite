@@ -98,7 +98,8 @@ export async function validateBody<T>(
 }
 
 // ── Global error handler wrapper ─────────────────────────────────────────
-type RouteHandler = (request: NextRequest, context: { params: Promise<Record<string, string>> }) => Promise<NextResponse>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type RouteHandler = (request: NextRequest, context?: any) => Promise<NextResponse>;
 
 export function withErrorHandler(handler: RouteHandler): RouteHandler {
   return async (request, context) => {

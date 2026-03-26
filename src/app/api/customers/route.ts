@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, validateBody, getPagination } from "@/lib/api-utils";
+import { authenticateApi, validateBody, getPagination, withErrorHandler } from "@/lib/api-utils";
 import { customerCreateSchema } from "@/lib/validations/job";
 
-export async function GET(request: NextRequest) {
+export const GET = withErrorHandler(async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -27,9 +27,9 @@ export async function GET(request: NextRequest) {
   // Strip portalToken from list responses (it's a bearer credential)
   const safe = customers.map(({ portalToken: _pt, ...rest }) => rest);
   return NextResponse.json(safe);
-}
+});
 
-export async function POST(request: NextRequest) {
+export const POST = withErrorHandler(async function POST(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
 
@@ -48,4 +48,4 @@ export async function POST(request: NextRequest) {
   });
 
   return NextResponse.json(customer, { status: 201 });
-}
+});

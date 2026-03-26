@@ -1,8 +1,8 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, requireAdmin, parseBody, apiError } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, requireAdmin, parseBody, apiError, withErrorHandler } from "@/lib/api-utils";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const GET = withErrorHandler(async function GET(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
@@ -19,9 +19,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   if (!vendor) return apiError("Vendor not found", 404);
   return NextResponse.json(vendor);
-}
+});
 
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const PUT = withErrorHandler(async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
@@ -55,9 +55,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
   });
 
   return NextResponse.json(vendor);
-}
+});
 
-export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export const DELETE = withErrorHandler(async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
@@ -78,4 +78,4 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
   await prisma.vendor.delete({ where: { id, companyId: user.companyId } });
   return NextResponse.json({ success: true });
-}
+});

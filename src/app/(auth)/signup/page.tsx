@@ -159,6 +159,7 @@ export default function SignupPage() {
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
+          maxLength={255}
           autoFocus
         />
         <Input
@@ -167,6 +168,7 @@ export default function SignupPage() {
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
           required
+          maxLength={255}
         />
         <Input
           type="email"
@@ -174,6 +176,7 @@ export default function SignupPage() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          maxLength={255}
         />
         <div>
           <Input
