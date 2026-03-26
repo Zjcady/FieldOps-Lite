@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   const from = searchParams.get("from");
   const to = searchParams.get("to");
 
-  const where: Record<string, unknown> = { companyId: user.companyId };
+  const where: Record<string, unknown> = { companyId: user.companyId, deletedAt: null };
   if (status && status !== "all") where.status = status;
   if (crewId) where.crewId = crewId;
   if (search) where.title = { contains: search, mode: "insensitive" };

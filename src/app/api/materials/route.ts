@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, parseBody, apiError } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, parseBody, apiError, getPagination } from "@/lib/api-utils";
 import { MATERIAL_STATUSES } from "@/lib/constants";
 
 export async function GET(request: NextRequest) {
@@ -18,6 +18,8 @@ export async function GET(request: NextRequest) {
     where.status = status;
   }
 
+  const { skip, take } = getPagination(request, 200);
+
   const materials = await prisma.material.findMany({
     where,
     include: {
@@ -25,6 +27,8 @@ export async function GET(request: NextRequest) {
       vendor: { select: { name: true } },
     },
     orderBy: { createdAt: "desc" },
+    skip,
+    take,
   });
 
   return NextResponse.json(materials);

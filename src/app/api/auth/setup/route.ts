@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import { z } from "zod";
-
-// Rate limit: max 5 setup attempts per IP per minute
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-const RATE_LIMIT_WINDOW_MS = 60_000;
-const RATE_LIMIT_MAX = 5;
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-  if (!entry || now >= entry.resetAt) {
-    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return true;
-  }
-  if (entry.count >= RATE_LIMIT_MAX) return false;
-  entry.count++;
-  return true;
-}
+import { checkRateLimit } from "@/lib/api-utils";
 
 const setupSchema = z.object({
   authId: z.string().min(1).max(255),
@@ -35,7 +19,7 @@ const setupSchema = z.object({
  */
 export async function POST(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "unknown";
-  if (!checkRateLimit(ip)) {
+  if (!checkRateLimit("setup", ip, 5)) {
     return NextResponse.json(
       { error: "Too many requests. Please try again later." },
       { status: 429 }

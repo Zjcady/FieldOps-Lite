@@ -22,7 +22,7 @@ export async function PUT(
   if (!existing) return apiError("Template not found", 404);
 
   const updated = await prisma.pricingTemplate.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: {
       name: body.name,
       category: body.category,
@@ -54,7 +54,7 @@ export async function DELETE(
   if (!existing) return apiError("Template not found", 404);
 
   await prisma.pricingTemplate.update({
-    where: { id },
+    where: { id, companyId: user.companyId },
     data: { isActive: false },
   });
 

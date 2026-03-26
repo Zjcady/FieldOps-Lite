@@ -1,15 +1,19 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, requireWrite, parseBody, apiError, safeDate } from "@/lib/api-utils";
+import { authenticateApi, requireWrite, parseBody, apiError, safeDate, getPagination } from "@/lib/api-utils";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+
+  const { skip, take } = getPagination(request, 200);
 
   const inspections = await prisma.inspection.findMany({
     where: { companyId: user.companyId },
     include: { job: true, permit: true },
     orderBy: { scheduledDate: "asc" },
+    skip,
+    take,
   });
   return NextResponse.json(inspections);
 }

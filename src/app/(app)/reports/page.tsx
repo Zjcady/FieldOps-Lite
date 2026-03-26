@@ -4,7 +4,6 @@ import { useFetch } from "@/lib/hooks/use-fetch";
 import { Card } from "@/components/ui/card";
 import { MetricCard } from "@/components/shared/metric-card";
 import { formatCurrency } from "@/lib/format";
-import Link from "next/link";
 import {
   AlertCircle, FileSpreadsheet, TrendingUp, TrendingDown,
   DollarSign, Briefcase, Users, Clock, BarChart3,
@@ -210,13 +209,14 @@ export default function ReportsPage() {
           <h1 className="text-lg font-semibold tracking-tight">Analytics</h1>
           <p className="text-xs text-muted-foreground">Business performance at a glance</p>
         </div>
-        <Link
+        <a
           href="/api/export?type=jobs&format=csv"
+          download="fieldops-export.csv"
           className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors hover:bg-muted"
         >
           <FileSpreadsheet className="h-3.5 w-3.5" />
           Export
-        </Link>
+        </a>
       </div>
 
       {/* ═══ KPI Row ═══ */}
@@ -431,20 +431,20 @@ export default function ReportsPage() {
         Export & Integrations
       </h2>
       <div className="grid grid-cols-2 gap-3">
-        <Link href="/api/export?type=jobs&format=csv">
+        <a href="/api/export?type=jobs&format=csv" download="fieldops-jobs.csv">
           <Card className="cursor-pointer p-4 text-center transition-all hover:border-primary/30 hover:translate-y-[-1px]">
             <FileSpreadsheet className="mx-auto mb-2 h-5 w-5 text-green-400" />
             <div className="text-sm font-semibold">QuickBooks CSV</div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">Jobs + invoices</div>
           </Card>
-        </Link>
-        <Link href="/api/export?type=jobs&format=json">
+        </a>
+        <a href="/api/export?type=jobs&format=json" download="fieldops-jobs.json">
           <Card className="cursor-pointer p-4 text-center transition-all hover:border-primary/30 hover:translate-y-[-1px]">
             <TrendingUp className="mx-auto mb-2 h-5 w-5 text-blue-400" />
             <div className="text-sm font-semibold">JSON Export</div>
             <div className="mt-0.5 text-[10px] text-muted-foreground">Analytics data</div>
           </Card>
-        </Link>
+        </a>
       </div>
     </div>
   );

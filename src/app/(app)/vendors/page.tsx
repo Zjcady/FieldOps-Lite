@@ -113,16 +113,17 @@ export default function VendorsPage() {
         <Card className="mb-4 p-4 space-y-3">
           <Input
             placeholder="Vendor name *"
+            aria-label="Vendor name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             autoFocus
           />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input placeholder="Contact person" value={contact} onChange={(e) => setContact(e.target.value)} />
-            <Input placeholder="Phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input placeholder="Contact person" aria-label="Contact person" value={contact} onChange={(e) => setContact(e.target.value)} />
+            <Input placeholder="Phone" aria-label="Vendor phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input placeholder="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input placeholder="Email" type="email" aria-label="Vendor email" value={email} onChange={(e) => setEmail(e.target.value)} />
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}

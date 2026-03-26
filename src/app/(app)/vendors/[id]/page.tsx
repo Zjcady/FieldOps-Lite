@@ -114,13 +114,13 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
 
       {editing ? (
         <Card className="mb-4 p-4 space-y-3">
-          <Input placeholder="Vendor name *" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+          <Input placeholder="Vendor name *" aria-label="Vendor name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input placeholder="Contact person" value={editContact} onChange={(e) => setEditContact(e.target.value)} />
-            <Input placeholder="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+            <Input placeholder="Contact person" aria-label="Contact person" value={editContact} onChange={(e) => setEditContact(e.target.value)} />
+            <Input placeholder="Phone" aria-label="Vendor phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <Input placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            <Input placeholder="Email" type="email" aria-label="Vendor email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
             <select
               value={editCategory}
               onChange={(e) => setEditCategory(e.target.value)}
@@ -152,7 +152,7 @@ export default function VendorDetailPage({ params }: { params: Promise<{ id: str
                 {vendor.category}
               </span>
             )}
-            <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0">
+            <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0" aria-label="Edit vendor">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
           </div>

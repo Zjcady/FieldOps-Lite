@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { authenticateApi, apiError, requireWrite, parseBody } from "@/lib/api-utils";
+import { authenticateApi, apiError, requireWrite, parseBody, getPagination } from "@/lib/api-utils";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const [user, errorRes] = await authenticateApi();
   if (errorRes) return errorRes;
+
+  const { skip, take } = getPagination(request, 200);
 
   const invoices = await prisma.invoice.findMany({
     where: { companyId: user.companyId },
     include: { job: { select: { title: true, jobNumber: true } } },
     orderBy: { createdAt: "desc" },
+    skip,
+    take,
   });
 
   return NextResponse.json(invoices);

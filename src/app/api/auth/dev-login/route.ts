@@ -20,7 +20,15 @@ export async function POST(request: NextRequest) {
     return res;
   }
 
-  const { authId, email } = await request.json();
+  let authId: string | undefined;
+  let email: string | undefined;
+  try {
+    const body = await request.json();
+    authId = body.authId;
+    email = body.email;
+  } catch {
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
+  }
 
   if (!authId && !email) {
     const errRes = NextResponse.json({ error: "authId or email required" }, { status: 400 });

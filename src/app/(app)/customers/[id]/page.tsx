@@ -91,8 +91,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
     if (!customer) return;
     if (customer.portalToken) {
       const link = `${window.location.origin}/portal/${customer.portalToken}`;
-      await navigator.clipboard.writeText(link);
-      toast.success("Portal link copied!");
+      try {
+        await navigator.clipboard.writeText(link);
+        toast.success("Portal link copied!");
+      } catch {
+        toast.warning("Could not copy to clipboard");
+      }
     } else {
       setGeneratingPortal(true);
       try {
@@ -195,12 +199,12 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
 
       {editing ? (
         <Card className="mb-4 p-4 space-y-3">
-          <Input placeholder="Customer name *" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
+          <Input placeholder="Customer name *" aria-label="Customer name" value={editName} onChange={(e) => setEditName(e.target.value)} autoFocus />
           <div className="grid grid-cols-2 gap-3">
-            <Input placeholder="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
-            <Input placeholder="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+            <Input placeholder="Email" type="email" aria-label="Customer email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
+            <Input placeholder="Phone" aria-label="Customer phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
           </div>
-          <Input placeholder="Address" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
+          <Input placeholder="Address" aria-label="Customer address" value={editAddress} onChange={(e) => setEditAddress(e.target.value)} />
           <div className="flex gap-2">
             <Button size="sm" onClick={saveEdit} disabled={saving || !editName.trim()}>
               <Check className="mr-1 h-3.5 w-3.5" /> Save
@@ -214,7 +218,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         <>
           <div className="mb-1 flex items-center gap-2">
             <h1 className="text-lg font-semibold tracking-tight">{customer.name}</h1>
-            <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0">
+            <Button size="sm" variant="ghost" onClick={startEdit} className="h-7 w-7 p-0" aria-label="Edit customer">
               <Pencil className="h-3.5 w-3.5" />
             </Button>
             {/* Feature 23: Quick email button */}
@@ -284,6 +288,7 @@ export default function CustomerDetailPage({ params }: { params: Promise<{ id: s
         <div className="mt-3 flex gap-2">
           <Input
             placeholder="Enter referral source (customer name)"
+            aria-label="Referral source"
             value={referralSource}
             onChange={(e) => setReferralSource(e.target.value)}
             className="h-8 text-sm"

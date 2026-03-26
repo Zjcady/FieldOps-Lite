@@ -1,21 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
-import { apiError, validateBody } from "@/lib/api-utils";
+import { apiError, validateBody, checkRateLimit } from "@/lib/api-utils";
 import { portalMessageSchema } from "@/lib/validations/job";
-
-// Rate limiting for message POST (10 per minute per token)
-const msgRateMap = new Map<string, { count: number; resetAt: number }>();
-function checkMsgRate(token: string): boolean {
-  const now = Date.now();
-  const entry = msgRateMap.get(token);
-  if (!entry || now >= entry.resetAt) {
-    msgRateMap.set(token, { count: 1, resetAt: now + 60_000 });
-    return true;
-  }
-  if (entry.count >= 10) return false;
-  entry.count++;
-  return true;
-}
 
 export async function POST(
   request: NextRequest,
@@ -23,7 +9,7 @@ export async function POST(
 ) {
   const { token } = await params;
 
-  if (!checkMsgRate(token)) {
+  if (!checkRateLimit("portal-msg", token, 10)) {
     return NextResponse.json({ error: "Too many messages. Please wait." }, { status: 429 });
   }
 

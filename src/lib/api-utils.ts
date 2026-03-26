@@ -12,6 +12,14 @@ export function getRequestId(): string {
   return crypto.randomUUID();
 }
 
+// ── Pagination helper ───────────────────────────────────────────────
+export function getPagination(request: NextRequest, defaultTake = 100, maxTake = 500) {
+  const url = new URL(request.url);
+  const skip = Math.max(0, parseInt(url.searchParams.get("skip") || "0", 10) || 0);
+  const take = Math.min(maxTake, Math.max(1, parseInt(url.searchParams.get("take") || String(defaultTake), 10) || defaultTake));
+  return { skip, take };
+}
+
 // ── Export hard limit (#55) ─────────────────────────────────────────
 export const EXPORT_LIMIT = 10000;
 
@@ -106,6 +114,36 @@ export function withErrorHandler(handler: RouteHandler): RouteHandler {
   };
 }
 
+// ── Rate Limiter (with auto-cleanup) ─────────────────────────────────────
+const rateLimitMaps = new Map<string, Map<string, { count: number; resetAt: number }>>();
+let lastCleanup = Date.now();
+
+export function checkRateLimit(namespace: string, key: string, maxRequests: number, windowMs: number = 60_000): boolean {
+  // Periodic cleanup every 5 minutes to prevent memory leaks
+  if (Date.now() - lastCleanup > 300_000) {
+    lastCleanup = Date.now();
+    for (const [, map] of rateLimitMaps) {
+      const now = Date.now();
+      for (const [k, v] of map) {
+        if (now >= v.resetAt) map.delete(k);
+      }
+    }
+  }
+
+  if (!rateLimitMaps.has(namespace)) rateLimitMaps.set(namespace, new Map());
+  const map = rateLimitMaps.get(namespace)!;
+  const now = Date.now();
+  const entry = map.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    map.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (entry.count >= maxRequests) return false;
+  entry.count++;
+  return true;
+}
+
 // ── File upload validation (#7) ──────────────────────────────────────────
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "image/heif"]);
@@ -124,14 +162,6 @@ export function validateCoords(lat: unknown, lng: unknown): { lat: number | null
     lat: la !== null && isFinite(la) && la >= -90 && la <= 90 ? la : null,
     lng: ln !== null && isFinite(ln) && ln >= -180 && ln <= 180 ? ln : null,
   };
-}
-
-// ── Pagination (#8) ─────────────────────────────────────────────────────
-export function getPagination(request: NextRequest, defaultLimit = 25) {
-  const { searchParams } = new URL(request.url);
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10) || 1);
-  const limit = Math.min(200, Math.max(1, parseInt(searchParams.get("limit") || String(defaultLimit), 10) || defaultLimit));
-  return { skip: (page - 1) * limit, take: limit, page, limit };
 }
 
 // ── Safe search (#11) ───────────────────────────────────────────────────
